@@ -14,3 +14,18 @@
 限制：未接入 AI；没有刷新恢复、PGN 导出、计时和音效；无公开部署。未验证 Safari/Firefox 和真实触摸拖拽。以上为后续里程碑范围，不宣称人机 MVP 已完成。
 
 下一步 M2：Stockfish lite 单线程 Worker、UCI 握手与队列、搜索取消/过期结果隔离、三档强度、执白/执黑及引擎异常恢复。先补生命周期测试，再接入界面。
+
+# M2 验收记录（当前版本）
+
+2026-10-11。上面的 M0/M1 记录保留为历史；M2 已完成 Stockfish 人机对弈。
+
+- `npm run lint`、`npm run typecheck`、`git diff --check`：通过。
+- `npm test`：40 项通过。新增 UCI 握手、搜索串行、难度快照、初始局面和完整历史传递、取消/超时/销毁、旧 Worker 消息与错误隔离；控制器执黑先手、悔棋、新局、配置切换、非法 AI 走法、重试、卸载和终局。
+- `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`：19 项通过、1 项按设计跳过。含真实 Stockfish WASM 的桌面与 Pixel 7 模拟测试，原本地双人流程全部回归。
+- `npm run build`：通过；JS/WASM/GPL 资源完整进入 dist/engine，未打包大型 full 引擎。
+- `PLAYWRIGHT_CHANNEL=chrome PLAYWRIGHT_PRODUCTION=1 npm run test:e2e -- tests/e2e/ai.spec.ts --project=desktop`：4 项通过。在静态生产预览中验证真实 AI 应答、双方悔棋、重开、三档强度、执黑开局、搜索期间切换及 WASM 请求失败后的恢复。
+- Codex 内置浏览器视觉检查：默认人机模式、Stockfish 中级标签、对局设置入口、移动布局正常。
+
+范围限制：尚无刷新恢复、PGN 导出、音效或公开部署。真实移动触摸拖拽以及 Safari/Firefox 未验证；三档棋力未做 Elo 标定。引擎资源加载超时为 20 秒，失败后可重试或改用本地双人。
+
+实现取舍：取消即销毁旧 Worker，换取确定的响应隔离；代价是取消后的首次搜索需要重新初始化轻量 WASM。正常连续回合复用 Worker。

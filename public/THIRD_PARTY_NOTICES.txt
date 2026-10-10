@@ -1,0 +1,19 @@
+Chess Lab — Stockfish engine notice
+
+Engine: stockfish npm package 19.0.0, lite single-threaded build.
+Files: engine/stockfish-19-lite-single.js and .wasm, copied unmodified.
+Copyright (c) 2026 Chess.com, LLC; Stockfish authors and contributors.
+License: GNU General Public License v3 (see engine/COPYING.txt).
+
+Source for the pinned npm release (npm gitHead):
+https://github.com/nmrugg/stockfish.js/tree/54fde71d90c7c403964f6cacef48f7bbec495df1
+Corresponding source archive:
+https://github.com/nmrugg/stockfish.js/archive/54fde71d90c7c403964f6cacef48f7bbec495df1.tar.gz
+Build instructions and network files are documented in that source tree.
+Upstream: https://github.com/nmrugg/stockfish.js
+Stockfish: https://github.com/official-stockfish/Stockfish
+
+No changes were made to the engine binaries. Chess Lab's adapter and UI source,
+build scripts and locked dependencies are maintained in the accompanying project.
+Preserve this notice and the GPL text when distributing the engine. Public
+redistribution must also provide the corresponding source as required by GPLv3.

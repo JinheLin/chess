@@ -13,3 +13,17 @@ M2 通过 ChessEngine 接口加入 Worker UCI adapter；请求序号、取消与
 - https://jhlywa.github.io/chess.js/ （v1.4 规则 API）
 
 依赖版本以 package-lock.json 为准。应用无远程字体、图片或服务依赖，构建产物可部署到静态主机；file:// 直接打开不受支持。
+
+## M2 实现
+
+默认人机模式，控制器构造不产生副作用，React effect 连接引擎工厂并在卸载时断开，兼容 StrictMode 重挂载。
+
+新增 ENGINE_LOADING、AI_THINKING、ENGINE_ERROR 状态。UI 无权提交 AI 走法；适配器返回 UCI 后控制器再次交给 chess.js 验证。引擎错误保留当前棋局，重试重新建立 Worker。
+
+StockfishEngine：uci/uciok → Hash 配置 → isready/readyok；搜索队列串行执行，Skill Level 在每次搜索前设置。搜索传递初始 FEN 和完整 UCI 历史，保留重复局面信息。握手 20 秒、搜索 movetime + 20 秒超时。
+
+取消策略：销毁 Worker 并拒绝等待中的 UCI 响应；下一次使用重建 Worker。没有在同一个 Worker 上发 stop 后立即开启新搜索，因此无需猜测一个 bestmove 属于哪个请求。Worker 身份检查隔离消息及错误回调；控制器 revision 在初始化、配置与搜索每次 await 后检查。新局、模式切换、认输、悔棋、卸载都使旧请求失效。
+
+取舍：取消后需重新初始化 WASM，而普通连续走棋复用 Worker 和搜索缓存。单线程 lite 文件较小，避免了跨源隔离部署配置。
+
+资源来自精确锁定的 stockfish@19.0.0。prepare-engine 脚本由 dev/build 调用，只复制 lite-single、WASM 和许可。Vite base 相对路径使资源可随静态站点部署。测试配置支持生产预览独立端口，验证真正的 dist。

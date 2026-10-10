@@ -4,7 +4,7 @@ async function move(page: Page, from: string, to: string) {
   await page.getByTestId(`square-${from}`).click();
   await page.getByTestId(`square-${to}`).click();
 }
-test.beforeEach(async ({ page }) => { await page.goto('/'); });
+test.beforeEach(async ({ page }) => { await page.goto('/'); await page.getByRole('button', {name:'对局设置', exact:true}).click(); await page.getByRole('combobox', {name:'对弈模式',exact:true}).selectOption('local'); await page.getByRole('button', {name:'应用并开始新局'}).click(); });
 test('click moves, legal markers, SAN, undo and new game confirmation', async ({ page }) => {
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('白方走棋');
   await page.getByTestId('square-e2').click();
