@@ -1,6 +1,6 @@
 # Chess Lab
 
-浏览器中的国际象棋。M0、M1、M2、M3 已完成：本地双人及 Stockfish 人机对弈，无后端。
+浏览器中的国际象棋。M0–M3 已完成，M4 发布验证与 GitHub Pages 工作流已配置：本地双人及 Stockfish 人机对弈，无后端。
 
 需要 Node.js 22.12+。
 
@@ -47,7 +47,7 @@ npm run preview
 
 将整个 dist 目录供静态服务器托管，保留 engine 路径及文件名。JS 应使用 JavaScript MIME，WASM 使用 application/wasm。无需跨源隔离头。应用运行时不依赖 CDN；从静态服务器打开，不能通过 file:// 运行。
 
-引擎采用 GPLv3，文件保持原样。许可证和固定版本源码链接随产物提供，见 public/THIRD_PARTY_NOTICES.txt；对外分发时需按 GPL 提供对应源码。未进行公开部署。
+引擎采用 GPLv3，文件保持原样。许可证和固定版本源码链接随产物提供，见 public/THIRD_PARTY_NOTICES.txt；对外分发时需按 GPL 提供对应源码。GitHub Pages 发布流程同时提供应用和固定版本引擎源码。
 
 刷新自动恢复当前棋局、完整历史、对弈设置、棋盘方向及音效开关；支持 PGN 导出、吃子展示和悔棋确认。手机测试使用设备模拟，真实触摸拖拽与 Safari/Firefox 尚未验证。
 
@@ -61,3 +61,10 @@ npm run preview
 「导出 PGN」下载含双方名称、开局日期（UTC）、完整 SAN 与比赛结果的棋谱。新局会替换当前存档，需保留旧局时先导出。M3 不包含 PGN 导入和历史对局列表。
 
 落子、吃子、将军及终局使用不同的本地合成短音。浏览器要求先在页面进行一次交互才能出声；可通过棋盘下方音效按钮静音，刷新保留设置。恢复和悔棋不重播落子音效。音效不可用不影响走棋。
+
+
+## 发布
+
+GitHub 仓库：https://github.com/JinheLin/chess
+
+`npm run build && npm run verify:dist` 校验生产资源；`npm run test:release` 在真实静态子目录运行全套端到端测试。手动 GitHub Pages 发布工作流仅在全部检查通过后部署。操作与回滚说明见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。

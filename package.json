@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "predev": "node scripts/prepare-engine.mjs"
+    "predev": "node scripts/prepare-engine.mjs",
+    "verify:dist": "node scripts/verify-dist.mjs",
+    "test:release": "node scripts/test-release.mjs"
   },
   "keywords": [],
   "author": "",

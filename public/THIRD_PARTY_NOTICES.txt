@@ -17,3 +17,7 @@ No changes were made to the engine binaries. Chess Lab's adapter and UI source,
 build scripts and locked dependencies are maintained in the accompanying project.
 Preserve this notice and the GPL text when distributing the engine. Public
 redistribution must also provide the corresponding source as required by GPLv3.
+
+GitHub Pages releases also host source downloads alongside the application:
+source/chess-lab.tar.gz (application source for the published commit)
+source/stockfish-19.tar.gz (upstream engine source at the pinned commit)

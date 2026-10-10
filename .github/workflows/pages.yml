@@ -1,0 +1,51 @@
+name: Publish GitHub Pages
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run lint && npm run typecheck && npm test && npm run build && npm run verify:dist
+      - run: npm run test:release
+      - name: Include application and engine source
+        run: |
+          mkdir -p dist/source
+          git archive --format=tar.gz HEAD > dist/source/chess-lab.tar.gz
+          curl --fail --location --retry 3 https://codeload.github.com/nmrugg/stockfish.js/tar.gz/54fde71d90c7c403964f6cacef48f7bbec495df1 -o dist/source/stockfish-19.tar.gz
+          tar -tzf dist/source/stockfish-19.tar.gz > /dev/null
+          cp public/THIRD_PARTY_NOTICES.txt dist/source/README.txt
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pages-test-report
+          path: playwright-report/
+          retention-days: 14
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -5,7 +5,7 @@ import { Chess } from 'chess.js';
 const status = (page: Page) => page.getByRole('status',{name:'对局状态'});
 async function move(page: Page, from: string, to: string) { await page.getByTestId(`square-${from}`).click(); await page.getByTestId(`square-${to}`).click(); }
 async function local(page: Page) {
-  await page.goto('/'); await page.getByRole('button',{name:'对局设置',exact:true}).click();
+  await page.goto('./'); await page.getByRole('button',{name:'对局设置',exact:true}).click();
   await page.getByRole('combobox',{name:'对弈模式',exact:true}).selectOption('local');
   await page.getByRole('button',{name:'应用并开始新局'}).click();
 }
@@ -45,7 +45,7 @@ test('repetition and resignation remain terminal after reload', async ({page}) =
   await page.reload(); await expect(status(page)).toContainText('黑方获胜 · 白方认输');
 });
 test('AI resumes a saved pending turn once and retains side and difficulty', async ({page}) => {
-  await page.goto('/'); await page.getByRole('button',{name:'对局设置',exact:true}).click();
+  await page.goto('./'); await page.getByRole('button',{name:'对局设置',exact:true}).click();
   await page.getByLabel('我的执棋').selectOption('b'); await page.getByLabel('AI 难度').selectOption('2');
   // Block the new Worker resource so reload occurs deterministically before its opening.
   await page.route('**/engine/*.js',route=>route.abort());
@@ -60,7 +60,7 @@ test('AI resumes a saved pending turn once and retains side and difficulty', asy
 });
 test('corrupt storage and blocked storage show feedback without breaking play', async ({page}) => {
   await page.addInitScript(()=>localStorage.setItem('chess-lab.session.v1','broken'));
-  await page.goto('/'); await expect(page.getByRole('status',{name:'恢复提示'})).toContainText('无法读取');
+  await page.goto('./'); await expect(page.getByRole('status',{name:'恢复提示'})).toContainText('无法读取');
   await page.addInitScript(()=>{ Storage.prototype.setItem = () => {throw new Error('quota');}; });
   await local(page); await expect(page.getByRole('status',{name:'保存状态'})).toContainText('无法自动保存');
   await move(page,'e2','e4'); await expect(status(page)).toContainText('黑方走棋');

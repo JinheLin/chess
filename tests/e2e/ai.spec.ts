@@ -13,7 +13,7 @@ async function configure(page: Page, color: 'w'|'b', difficulty: string) {
 }
 test('real WASM engine responds, undo restores both plies, and new game resets', async ({page}) => {
   const errors: string[] = []; page.on('pageerror', error=>errors.push(error.message));
-  await page.goto('/'); await expect(status(page)).toContainText('白方走棋',{timeout:20000});
+  await page.goto('./'); await expect(status(page)).toContainText('白方走棋',{timeout:20000});
   await move(page,'e2','e4'); await expect(status(page)).toContainText('白方走棋',{timeout:15000});
   await expect(history(page)).toContainText('e4'); await expect(page.locator('.history-row')).toHaveCount(1);
   await expect(page.locator('.history-footer')).toContainText('2 步');
@@ -25,7 +25,7 @@ test('real WASM engine responds, undo restores both plies, and new game resets',
   expect(errors).toEqual([]);
 });
 test('all difficulties support black side with an automatic white opening', async ({page}) => {
-  await page.goto('/');
+  await page.goto('./');
   for (const level of ['0','1','2']) {
     await configure(page,'b',level);
     await expect(status(page)).toContainText('黑方走棋',{timeout:20000});
@@ -36,7 +36,7 @@ test('all difficulties support black side with an automatic white opening', asyn
   }
 });
 test('undo during search and side switching do not apply old results', async ({page}) => {
-  await page.goto('/'); await configure(page,'w','2');
+  await page.goto('./'); await configure(page,'w','2');
   await expect(status(page)).toContainText('白方走棋',{timeout:20000});
   await move(page,'e2','e4'); await page.getByRole('button',{name:'悔棋',exact:false}).click(); await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
   await expect(status(page)).toContainText('白方走棋',{timeout:15000});
@@ -47,7 +47,7 @@ test('undo during search and side switching do not apply old results', async ({p
 });
 test('failed WASM load is visible and retry recovers the same position', async ({page}) => {
   await page.route('**/engine/*.wasm',route=>route.abort());
-  await page.goto('/'); await expect(page.getByRole('alert')).toBeVisible({timeout:25000});
+  await page.goto('./'); await expect(page.getByRole('alert')).toBeVisible({timeout:25000});
   await expect(page.locator('.history-footer')).toContainText('0 步');
   await page.unroute('**/engine/*.wasm'); await page.getByRole('button',{name:'重试引擎'}).click();
   await expect(status(page)).toContainText('白方走棋',{timeout:20000});

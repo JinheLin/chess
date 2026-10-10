@@ -94,3 +94,20 @@ describe('Stockfish UCI adapter', () => {
     await flush(); workers[0].emit('bestmove (none)'); await pending; engine.dispose();
   });
 });
+test('aborting a queued request does not kill the active search', async () => {
+  const {engine,workers} = setup();
+  const active = engine.getBestMove('a',{movetimeMs:1}); const abort = new AbortController();
+  const queued = expect(engine.getBestMove('b',{movetimeMs:1,signal:abort.signal})).rejects.toMatchObject({name:'AbortError'});
+  await flush(); abort.abort(); expect(workers[0].terminated).toBe(false);
+  workers[0].emit('bestmove e2e4'); await expect(active).resolves.toBe('e2e4'); await queued;
+  expect(workers[0].commands.filter(command=>command.startsWith('go'))).toHaveLength(1); engine.dispose();
+});
+test('message decoding errors reject current work and terminate the worker', async () => {
+  const {engine,workers} = setup(); const pending = expect(engine.getBestMove('a',{movetimeMs:1})).rejects.toThrow('通信失败');
+  await flush(); workers[0].onmessageerror?.({} as MessageEvent); await pending; expect(workers[0].terminated).toBe(true); engine.dispose();
+});
+test('worker construction failure is recoverable on the next initialization', async () => {
+  const worker = new WorkerMock(); let attempts = 0;
+  const engine = new StockfishEngine(()=>{ if (++attempts === 1) throw new Error('unavailable'); return worker; });
+  await expect(engine.initialize()).rejects.toThrow('无法启动'); await expect(engine.initialize()).resolves.toBeUndefined(); engine.dispose();
+});

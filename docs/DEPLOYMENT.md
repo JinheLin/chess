@@ -1,0 +1,43 @@
+# 静态发布
+
+目标仓库：https://github.com/JinheLin/chess
+目标页面：https://jinhelin.github.io/chess/
+
+## 本地发布验证
+
+```sh
+npm ci
+npx playwright install chromium
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run verify:dist
+npm run test:release
+```
+
+已有 Chrome 时在 test:release 前设置 PLAYWRIGHT_CHANNEL=chrome。默认两并发，减少测试浏览器启动争用；测试不自动重试。测试服务器只提供 dist 的静态文件，挂载 /chess/，正确提供 JS/WASM MIME，缺失文件返回 404，不依赖 Vite 开发时转换或回退。测试覆盖桌面和 Pixel 7 模拟；实际 Safari、Firefox 和手机硬件未验证。
+
+build 脚本在调用准备资源、类型检查及 Vite 前剔除代理环境变量。verify:dist 检查引擎原始文件 SHA-256 一致、WASM 可验证、许可文本与相对路径、没有混入大型 full 引擎。
+
+## GitHub Pages
+
+1. 将仓库 Pages 的 Build and deployment Source 设置为 GitHub Actions。
+2. 在 Actions 手动运行 Publish GitHub Pages，选择要发布的分支。
+3. build 作业安装锁定依赖，运行 lint、类型检查、单元测试、构建、资源验证和整套生产浏览器回归。
+4. 将发布提交的应用源码及固定版本 Stockfish 源码归档放入 dist/source，上传静态产物。
+5. 仅通过 build 后才执行 deploy。默认推送只触发 Release checks，不自动发布。
+
+应用资源采用相对路径，可在根目录或 /chess/ 子目录托管。保持 engine 下 JS/WASM 文件同名相邻，MIME 为 text/javascript、application/wasm。无需服务器 API、数据库或跨源隔离头。
+
+## 上线验收
+
+打开 HTTPS 页面，验证 JS/WASM 为 200 和正确 MIME；完成一组真实 AI 走棋；刷新保持棋谱、导出 PGN；核对 source/chess-lab.tar.gz、source/stockfish-19.tar.gz、引擎许可下载。
+
+源码下载对应发布版本；应用和引擎的授权说明见 package.json、THIRD_PARTY_NOTICES.txt 和 engine/COPYING.txt。运行时不读取 CDN。
+
+## 回滚
+
+优先 revert 有问题的提交并推送，然后对该分支再次手动运行 Publish GitHub Pages。也可在目标历史提交创建发布分支后手动运行该分支工作流；工作流会重新验证并部署完整产物。不要只替换 WASM 或 JS 中的单个文件。
+
+localStorage 存档按站点 origin 隔离：localhost 与 Pages 不共享。当前只保存一局，存档 version 1；升级必须保持兼容或提示降级，不应依赖上线时清空用户数据。

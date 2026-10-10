@@ -42,3 +42,15 @@
 - 内置浏览器视觉检查：吃子、音效开关、保存提示和 PGN 导出控件无重叠；移动浏览器用例验证无水平溢出。
 
 范围限制：仅保存当前对局；同源多标签页最后保存覆盖；无 PGN 导入或历史对局列表。真实移动触摸拖拽、Safari/Firefox 和实际扬声器听感未验证（音效创建、分类、静音偏好及恢复已测试）。M4 公开部署未开始。
+
+# M4 发布验收
+
+2026-10-11。增加严格静态服务器下的完整回归、引擎生命周期测试、发布资源校验，以及 GitHub Actions / Pages 工作流。
+
+- `npm run lint`、`npm run typecheck`、`npm test`：通过，63 项单元测试通过。
+- `npm run build`、`npm run verify:dist`：通过；构建清除代理变量，校验轻量引擎 JS/WASM 原始哈希、许可及相对资源路径。
+- 发布回归覆盖桌面和 Pixel 7 模拟、三局连续真实引擎对弈、切换执棋、搜索期间认输、真实引擎将死、刷新恢复、PGN 导出和错误重试。
+- `PLAYWRIGHT_CHANNEL=chrome npm run test:release`：35 项通过，1 项按设计跳过（移动端鼠标拖拽）；完整生产回归通过。
+- GitHub Pages 发布前自动执行全套检查，发布包同时包含应用及固定版本 Stockfish 源码。
+
+浏览器覆盖范围仍为 Chromium；真实手机触摸拖拽、Safari/Firefox 未验证。
