@@ -92,3 +92,18 @@ test('disconnect during initialization prevents late setup from starting a searc
   game.connectEngine(()=>engine); game.disconnectEngine(); finish(); await flush();
   expect(engine.disposed).toBe(true); expect(engine.requests).toHaveLength(0);
 });
+test('restored AI turn sends its full pre-refresh history and produces one reply', async () => {
+  const {game,engines} = setup(); await flush(); game.move('e2','e4'); await flush();
+  const saved = game.save(); game.disconnectEngine();
+  const restored = GameController.restore(saved); const engine = new FakeEngine(); restored.connectEngine(()=>engine); await flush();
+  expect(engine.requests).toHaveLength(1); expect(engine.requests[0].options.moves).toEqual(['e2e4']);
+  engines[0].requests[0].resolve('e7e5'); await flush(); expect(restored.getSnapshot().history).toHaveLength(1);
+  engine.requests[0].resolve('c7c5'); await flush(); expect(restored.getSnapshot().history.map(move=>move.san)).toEqual(['e4','c5']); restored.disconnectEngine();
+});
+test('cancelling a restored human promotion initializes the engine for further play', async () => {
+  const game = new GameController('7k/P7/8/8/8/8/8/7K w - - 0 1',{mode:'ai',playerColor:'w',difficulty:0});
+  game.connectEngine(()=>new FakeEngine()); await flush(); game.move('a7','a8'); const restored = GameController.restore(game.save()); game.disconnectEngine();
+  const engine = new FakeEngine(); restored.connectEngine(()=>engine); expect(restored.getSnapshot().phase).toBe('PROMOTION_PENDING');
+  restored.cancelPromotion(); await flush(); expect(restored.getSnapshot().phase).toBe('PLAYER_TURN');
+  restored.move('a7','a8'); restored.promote('q'); await flush(); expect(engine.requests).toHaveLength(1); restored.disconnectEngine();
+});

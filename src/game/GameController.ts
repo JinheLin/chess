@@ -1,15 +1,18 @@
 import { Chess } from 'chess.js';
-import type { Square } from 'chess.js';
+import type { Color, Square } from 'chess.js';
 import { colorName, resultOf } from './ChessRules';
 import type { GameSettings, GameState, Promotion } from './GameState';
 import { DIFFICULTIES } from '../engine/ChessEngine';
 import type { ChessEngine } from '../engine/ChessEngine';
+import { validateSavedGame } from './SavedGame';
+import type { SavedGame } from './SavedGame';
 
 export class GameController {
   private chess: Chess;
   private initialFen: string;
   private promotion: GameState['promotion'] = null;
-  private resignation: string | null = null;
+  private resignation: Color | null = null;
+  private startedAt = new Date().toISOString();
   private listeners = new Set<() => void>();
   private state: GameState;
   private settings: GameSettings;
@@ -26,13 +29,49 @@ export class GameController {
     this.settings = { ...settings };
     this.state = this.snapshot();
   }
+  static restore(value: unknown): GameController {
+    const saved = validateSavedGame(value);
+    const game = new GameController(saved.initialFen, saved.settings);
+    for (const uci of saved.moves) {
+      if (resultOf(game.chess)) throw new Error('终局之后仍有走棋');
+      game.chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
+    }
+    if (saved.resignedColor && (resultOf(game.chess) || saved.promotion || saved.resignedColor !== (saved.settings.mode === 'ai' ? saved.settings.playerColor : game.chess.turn()))) throw new Error('无效认输状态');
+    if (saved.promotion) {
+      const legal = game.chess.moves({ square: saved.promotion.from, verbose: true }).some(move => move.to === saved.promotion!.to && move.promotion);
+      if (!legal || resultOf(game.chess) || (saved.settings.mode === 'ai' && game.chess.turn() !== saved.settings.playerColor)) throw new Error('无效待升变状态');
+    }
+    game.promotion = saved.promotion;
+    game.resignation = saved.resignedColor;
+    game.startedAt = saved.startedAt;
+    game.state = game.snapshot();
+    return game;
+  }
+  save(): SavedGame {
+    return {
+      version: 1, initialFen: this.initialFen,
+      moves: this.chess.history({ verbose: true }).map(move => `${move.from}${move.to}${move.promotion ?? ''}`),
+      settings: { ...this.settings }, resignedColor: this.resignation,
+      promotion: this.promotion ? { ...this.promotion } : null, startedAt: this.startedAt,
+    };
+  }
+  exportPgn(): string {
+    // Export on a replayed copy: PGN headers must not mutate the active game.
+    const copy = new Chess(this.initialFen);
+    for (const move of this.chess.history({ verbose: true })) copy.move({ from: move.from, to: move.to, promotion: move.promotion });
+    const loser = this.resignation ?? (this.chess.isCheckmate() ? this.chess.turn() : null);
+    const result = loser ? loser === 'w' ? '0-1' : '1-0' : resultOf(this.chess) ? '1/2-1/2' : '*';
+    const player = (color: Color) => this.settings.mode === 'local' ? `Local ${color === 'w' ? 'White' : 'Black'}` : color === this.settings.playerColor ? 'Human' : `Stockfish 19 (Skill ${DIFFICULTIES[this.settings.difficulty].skill})`;
+    for (const [key, value] of Object.entries({ Event: 'Chess Lab', Site: 'Local', Date: this.startedAt.slice(0, 10).replaceAll('-', '.'), Round: '-', White: player('w'), Black: player('b'), Result: result })) copy.setHeader(key, value);
+    return copy.pgn({ maxWidth: 80 }) + '\n';
+  }
   getSnapshot = () => this.state;
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     return () => { this.listeners.delete(listener); };
   };
   private snapshot(): GameState {
-    const result = this.resignation ?? resultOf(this.chess);
+    const result = this.resignation ? `${colorName(this.resignation === 'w' ? 'b' : 'w')}获胜 · ${colorName(this.resignation)}认输` : resultOf(this.chess);
     const history = this.chess.history({ verbose: true });
     const king = this.chess.board().flat().find(p => p?.type === 'k' && p.color === this.chess.turn());
     const aiTurn = this.settings.mode === 'ai' && this.chess.turn() !== this.settings.playerColor;
@@ -133,7 +172,7 @@ export class GameController {
     this.promotion = null;
     this.resume();
   }
-  cancelPromotion() { this.promotion = null; this.publish(); }
+  cancelPromotion() { this.promotion = null; this.resume(); }
   undo() {
     if (!this.state.canUndo) return;
     this.cancelSearch();
@@ -149,6 +188,7 @@ export class GameController {
     this.disconnectEngine();
     this.settings = { ...settings };
     this.chess.reset();
+    this.startedAt = new Date().toISOString();
     this.initialFen = this.chess.fen();
     this.promotion = null;
     this.resignation = null;
@@ -159,7 +199,7 @@ export class GameController {
     if (this.state.result || this.promotion) return;
     this.cancelSearch();
     const color = this.settings.mode === 'ai' ? this.settings.playerColor : this.chess.turn();
-    this.resignation = `${colorName(color === 'w' ? 'b' : 'w')}获胜 · ${colorName(color)}认输`;
+    this.resignation = color;
     this.publish();
   }
 }

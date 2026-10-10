@@ -14,7 +14,7 @@ test('click moves, legal markers, SAN, undo and new game confirmation', async ({
   await move(page,'e7','e5');
   await expect(page.getByLabel('走棋记录', {exact:true})).toContainText('e4');
   await expect(page.getByLabel('走棋记录', {exact:true})).toContainText('e5');
-  await page.getByRole('button',{name:'悔棋'}).click();
+  await page.getByRole('button',{name:'悔棋',exact:false}).click(); await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('黑方走棋');
   await expect(page.getByLabel('走棋记录', {exact:true})).not.toContainText('e5');
   await page.getByRole('button',{name:'开始新局'}).click();
@@ -42,7 +42,7 @@ test('finish a complete game and undo checkmate', async ({page}) => {
   await expect(page.getByRole('button',{name:'认输',exact:true})).toBeDisabled();
   await move(page,'a2','a3');
   await expect(page.getByLabel('走棋记录',{exact:true})).not.toContainText('a3');
-  await page.getByRole('button',{name:'悔棋'}).click();
+  await page.getByRole('button',{name:'悔棋',exact:false}).click(); await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('黑方走棋');
 });
 test('promotion dialog cancels safely and allows knight underpromotion', async ({page}) => {

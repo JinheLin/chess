@@ -29,3 +29,16 @@
 范围限制：尚无刷新恢复、PGN 导出、音效或公开部署。真实移动触摸拖拽以及 Safari/Firefox 未验证；三档棋力未做 Elo 标定。引擎资源加载超时为 20 秒，失败后可重试或改用本地双人。
 
 实现取舍：取消即销毁旧 Worker，换取确定的响应隔离；代价是取消后的首次搜索需要重新初始化轻量 WASM。正常连续回合复用 Worker。
+
+# M3 验收记录（当前版本）
+
+2026-10-11。M3 完成完整历史恢复、设置恢复、PGN 导出、合成音效、吃子展示和悔棋确认。
+
+- `npm run lint`、`npm run typecheck`、`git diff --check`：通过。
+- `npm test`：60 项通过，新增存档结构及非法数据校验、历史重放、三次重复、易位权、过路兵、四种升变、认输、PGN 解析回环、音效分类与资源释放、AI 历史续局及恢复后取消升变。
+- `npm run build`：通过，编译进程清除代理环境变量；未执行 make format。
+- `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`：初跑 28 项通过、1 项跳过、1 项浏览器 context 启动超时；后者单独执行 `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e -- tests/e2e/ai.spec.ts --project=desktop --grep 'failed WASM' --workers=1` 通过。合计 29 项用例通过，移动鼠标拖拽用例按设计跳过。
+- `PLAYWRIGHT_CHANNEL=chrome PLAYWRIGHT_PRODUCTION=1 npm run test:e2e -- tests/e2e/session.spec.ts --project=desktop --workers=2`：5 项通过，针对实际 dist 验证持久化、真实 AI 刷新续局、PGN 下载、待升变、重复终局、认输和存储失败降级。
+- 内置浏览器视觉检查：吃子、音效开关、保存提示和 PGN 导出控件无重叠；移动浏览器用例验证无水平溢出。
+
+范围限制：仅保存当前对局；同源多标签页最后保存覆盖；无 PGN 导入或历史对局列表。真实移动触摸拖拽、Safari/Firefox 和实际扬声器听感未验证（音效创建、分类、静音偏好及恢复已测试）。M4 公开部署未开始。

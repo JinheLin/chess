@@ -18,7 +18,7 @@ test('real WASM engine responds, undo restores both plies, and new game resets',
   await expect(history(page)).toContainText('e4'); await expect(page.locator('.history-row')).toHaveCount(1);
   await expect(page.locator('.history-footer')).toContainText('2 步');
   await move(page,'g1','f3'); await expect(page.locator('.history-footer')).toContainText('4 步',{timeout:15000});
-  await page.getByRole('button',{name:'悔棋'}).click(); await expect(page.locator('.history-footer')).toContainText('2 步');
+  await page.getByRole('button',{name:'悔棋',exact:false}).click(); await page.getByRole('button',{name:'确认悔棋',exact:true}).click(); await expect(page.locator('.history-footer')).toContainText('2 步');
   await expect(status(page)).toContainText('白方走棋');
   await page.getByRole('button',{name:'开始新局'}).click(); await page.getByRole('button',{name:'确认新局'}).click();
   await expect(status(page)).toContainText('白方走棋',{timeout:15000}); await expect(page.locator('.history-footer')).toContainText('0 步');
@@ -38,7 +38,7 @@ test('all difficulties support black side with an automatic white opening', asyn
 test('undo during search and side switching do not apply old results', async ({page}) => {
   await page.goto('/'); await configure(page,'w','2');
   await expect(status(page)).toContainText('白方走棋',{timeout:20000});
-  await move(page,'e2','e4'); await page.getByRole('button',{name:'悔棋'}).click();
+  await move(page,'e2','e4'); await page.getByRole('button',{name:'悔棋',exact:false}).click(); await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
   await expect(status(page)).toContainText('白方走棋',{timeout:15000});
   await expect(page.locator('.history-footer')).toContainText('0 步');
   await move(page,'d2','d4'); await configure(page,'b','0');
