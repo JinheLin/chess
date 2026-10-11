@@ -1,4 +1,6 @@
 import type { ChessEngine, SearchOptions } from './ChessEngine';
+import { parseInfo, stableEvaluation } from './AnalysisEngine';
+import type { AnalysisEngine, Evaluation } from './AnalysisEngine';
 
 export interface EngineWorker {
   onmessage: ((event: MessageEvent) => void) | null;
@@ -10,7 +12,7 @@ export interface EngineWorker {
 const aborted = () => new DOMException('搜索已取消', 'AbortError');
 
 /** One UCI conversation at a time. Cancellation destroys the conversation entirely. */
-export class StockfishEngine implements ChessEngine {
+export class StockfishEngine implements ChessEngine, AnalysisEngine {
   private worker: EngineWorker | null = null;
   private ready: Promise<void> | null = null;
   private closed = false;
@@ -84,7 +86,14 @@ export class StockfishEngine implements ChessEngine {
   }
 
   getBestMove(fen: string, options: SearchOptions): Promise<string> {
-    const skill = this.skill;
+    return this.search(fen, options, this.skill).then(result => result.move);
+  }
+
+  analyze(fen: string, options: SearchOptions): Promise<Evaluation | null> {
+    return this.search(fen, options, 20, true).then(result => result.evaluation);
+  }
+
+  private search(fen: string, options: SearchOptions, skill: number, analysis = false) {
     const search = async () => {
       const { signal } = options;
       if (signal?.aborted) throw aborted();
@@ -98,11 +107,21 @@ export class StockfishEngine implements ChessEngine {
         const position = options.initialFen ?? fen;
         const moves = options.initialFen && options.moves?.length ? ` moves ${options.moves.join(' ')}` : '';
         this.worker!.postMessage(`position fen ${position}${moves}`);
-        const line = await this.command(`go movetime ${options.movetimeMs}`, text => text.startsWith('bestmove '), this.timeoutMs + options.movetimeMs);
+        const samples: Omit<Evaluation, 'stable'>[] = [];
+        const line = await this.command(`go movetime ${options.movetimeMs}${analysis ? ' depth 16' : ''}`, text => {
+          if (analysis) {
+            const info = parseInfo(text);
+            if (info) {
+              if (samples.at(-1)?.depth === info.depth) samples.pop();
+              samples.push(info);
+            }
+          }
+          return text.startsWith('bestmove ');
+        }, this.timeoutMs + options.movetimeMs);
         if (signal?.aborted) throw aborted();
         const move = line.split(/\s+/)[1];
-        if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move)) throw new Error('引擎返回了无效走法');
-        return move;
+        if (!(analysis && ['(none)', '0000'].includes(move)) && !/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move)) throw new Error('引擎返回了无效走法');
+        return { move, evaluation: stableEvaluation(samples) };
       } finally {
         signal?.removeEventListener('abort', cancel);
       }

@@ -111,3 +111,25 @@ test('worker construction failure is recoverable on the next initialization', as
   const engine = new StockfishEngine(()=>{ if (++attempts === 1) throw new Error('unavailable'); return worker; });
   await expect(engine.initialize()).rejects.toThrow('无法启动'); await expect(engine.initialize()).resolves.toBeUndefined(); engine.dispose();
 });
+
+test('analysis uses full strength, separates mate from cp and ignores bound / secondary scores', async () => {
+  const {engine,workers} = setup(); await engine.setDifficulty(0);
+  const pending = engine.analyze('fen',{movetimeMs:700,initialFen:'start',moves:['e2e4']});
+  await flush();
+  expect(workers[0].commands).toContain('setoption name Skill Level value 20');
+  expect(workers[0].commands).toContain('go movetime 700 depth 16');
+  workers[0].emit('info depth 10 multipv 1 score mate -3 pv a7a6\ninfo depth 11 multipv 1 score mate -3 pv a7a6\ninfo depth 12 score cp 900 lowerbound pv a7a6\ninfo depth 12 multipv 2 score cp 800 pv a7a6\nbestmove a7a6');
+  await expect(pending).resolves.toMatchObject({score:{kind:'mate',value:-3},stable:true,depth:11});
+  const playing = engine.getBestMove('fen',{movetimeMs:1}); await flush();
+  expect(workers[0].commands).toContain('setoption name Skill Level value 0');
+  workers[0].emit('bestmove e2e4'); await playing; engine.dispose();
+});
+test('cancelled analysis ignores stale scores and next analysis starts fresh', async () => {
+  const {engine,workers} = setup();const abort = new AbortController();
+  const pending = expect(engine.analyze('fen',{movetimeMs:1,signal:abort.signal})).rejects.toMatchObject({name:'AbortError'});
+  await flush();const stale = workers[0].onmessage!;abort.abort();await pending;
+  const fresh = engine.analyze('fen',{movetimeMs:1});await flush();
+  stale({data:'info depth 20 score cp 999 pv e2e4\nbestmove e2e4'} as MessageEvent);
+  workers[1].emit('info depth 2 score cp 12 pv d2d4\nbestmove d2d4');
+  await expect(fresh).resolves.toMatchObject({stable:false,score:{value:12}});engine.dispose();
+});

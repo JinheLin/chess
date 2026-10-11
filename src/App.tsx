@@ -9,6 +9,7 @@ import { StockfishEngine } from './engine/StockfishEngine';
 import { DIFFICULTIES } from './engine/ChessEngine';
 import { useGameSession } from './hooks/useGameSession';
 import { CapturedPieces } from './components/CapturedPieces';
+import { PersonalityPanel } from './components/PersonalityPanel';
 import { downloadPgn } from './storage/downloadPgn';
 
 export default function App() {
@@ -52,6 +53,7 @@ export default function App() {
             <div className="controls"><button disabled={!state.canUndo} onClick={() => setConfirmation('undo')}>↶ 悔棋</button><button aria-label="认输" disabled={!!state.result || !!state.promotion} onClick={() => setConfirmation('resign')}>⚑ 认输</button></div>
             <button className="primary new-game" onClick={() => { if (state.history.length || state.result) setConfirmation('new'); else { controller.newGame(); clearBoard(); } }}>＋ 开始新局</button>
           </section>
+          {isAI && <PersonalityPanel controller={controller} />}
           <MoveHistory history={state.history} />
           <div className="save-tools"><span role="status" aria-label="保存状态">{saveFailed ? '无法自动保存，请导出棋谱备份' : '已自动保存 · 仅此浏览器'}</span><button onClick={() => { try { downloadPgn(controller.exportPgn()); setExportError(false); } catch { setExportError(true); } }}>导出 PGN</button></div>
           {exportError && <p className="engine-error" role="alert">下载未成功，请检查浏览器下载设置后重试。</p>}

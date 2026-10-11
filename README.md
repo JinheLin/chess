@@ -70,3 +70,13 @@ npm run preview
 GitHub 仓库：https://github.com/JinheLin/chess
 
 `npm run build && npm run verify:dist` 校验生产资源；`npm run test:release` 在真实静态子目录运行全套端到端测试。手动 GitHub Pages 发布工作流仅在全部检查通过后部署。操作与回滚说明见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。
+
+## M3.5：棋手人格引擎
+
+人机模式新增 Alex（友好）、Victor（好胜）和 Professor（沉稳）。性格与棋力独立；棋手卡片可切换安静、适中、话痨，或一键静音。离线台词由真实棋局事件触发，不按固定回合播放。气泡约 9 秒消失，对话历史保留最近 40 条。
+
+独立裁判以 Skill 20 分析双方已经落下的着法。连续深度评价不足或不稳定时，不判定妙手、失误或局势逆转；只描述已发生的规则事实。不会展示候选路线、下一步最佳走法或把吃后直接等同于获胜。AI 下差时会承认自己的损失。
+
+自信、懊恼、尊重和兴奋影响情绪与表达；Victor 曾经说出口的嘲讽，可能在玩家逆转时被提起。人物偏好可跨刷新保存；故事、情绪及对话为当前浏览器会话内记忆，刷新、悔棋、新局或更换人物时清空，避免引用已撤销的棋局。
+
+无外部语言模型、TTS 或聊天接口。设计与阈值说明见 [docs/PERSONALITY.md](docs/PERSONALITY.md)。
