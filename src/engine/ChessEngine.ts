@@ -17,5 +17,5 @@ export const DIFFICULTIES = [
   { label: '中级', skill: 8, movetimeMs: 650 },
   { label: '高级', skill: 16, movetimeMs: 1200 },
   // Stable ID 3 preserves existing saved difficulty indices.
-  { label: '入门', skill: 0, movetimeMs: 120 },
+  { label: '入门', skill: 0, movetimeMs: 180 },
 ] as const;

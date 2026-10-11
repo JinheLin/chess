@@ -4,6 +4,8 @@ import {GameController} from '../../src/game/GameController';
 import type {SearchOptions} from '../../src/engine/ChessEngine';
 test('beginner policy sometimes misses the recommendation but can only select a legal move',()=>{
   expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>0)).toBe('a2a3');
+  expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.39)).toBe('a2a3');
+  expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.4)).toBe('e2e4');
   expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.8)).toBe('e2e4');
   expect(beginnerMove('a7a8q',['a7a8q'],()=>0)).toBe('a7a8q');
   expect(beginnerMove('a7a8q',['a7a8q','a7a8n'],()=>0)).toBe('a7a8n');
@@ -14,7 +16,7 @@ test('new difficulty survives saves, limits playing search, and exports its dist
   let options:SearchOptions|undefined;
   game.connectEngine(()=>({initialize:async()=>{},setDifficulty:async level=>{expect(level).toBe(0);},getBestMove:async(_fen,o)=>{options=o;return 'e2e4';},dispose:()=>{}}));
   for(let i=0;i<20;i++) await Promise.resolve();
-  expect(options).toMatchObject({movetimeMs:120,maxDepth:2});
+  expect(options).toMatchObject({movetimeMs:180,maxDepth:3});
   expect(game.getSnapshot().history).toHaveLength(1);
   expect(GameController.restore(game.save()).getSnapshot().settings.difficulty).toBe(3);
   expect(game.exportPgn()).toContain('Beginner policy');game.disconnectEngine();
