@@ -33,7 +33,7 @@ export default function App() {
     <div><strong>{colorName(color)}</strong><small>{isAI ? color === state.settings.playerColor ? '你' : `Stockfish · ${difficultyName}` : `本地玩家 ${color === 'w' ? '01' : '02'}`}</small></div>
     <span className="player-status">{state.result ? '对局结束' : state.turn === color ? '● 正在走棋' : '等待走棋'}</span>
   </div><CapturedPieces history={state.history} color={color} /></div>;
-  return <div className="app-shell" onPointerDownCapture={unlockSound} onKeyDownCapture={unlockSound}>
+  return <div className="app-shell" onPointerDownCapture={unlockSound} onTouchStartCapture={unlockSound} onKeyDownCapture={unlockSound}>
     <header><a className="brand" href="./"><span className="brand-mark">♞</span><span>Chess<span className="brand-light"> Lab</span><small>专注棋盘，享受每一步</small></span></a><div className="header-tag"><i />{modeName} <span> / </span> 自由对弈</div></header>
     <main>
       <div className="page-heading"><div><p className="eyebrow">A LITTLE FOCUS. A GREAT GAME.</p><h1>下一步，皆有可能<span>。</span></h1><p className="subtitle">{isAI ? '与 Stockfish 对弈，让每一步都有新的发现。' : '和身边的朋友，下一盘好棋。'}</p></div><span className="mode-badge">♟ 经典对弈</span></div>

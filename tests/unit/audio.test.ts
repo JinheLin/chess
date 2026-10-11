@@ -18,13 +18,41 @@ test('audio remains optional if browser blocks or lacks Web Audio', () => {
   vi.stubGlobal('AudioContext',undefined); const sound = new MoveSound();
   expect(()=>{sound.unlock();sound.play('move');sound.dispose();}).not.toThrow();
 });
-test('audio needs user unlock and releases context on disposal', () => {
-  const start = vi.fn(); const close = vi.fn(async()=>{}); const resume = vi.fn(async()=>{});
+const mockAudio = (resume = vi.fn(async () => {}), state = 'running') => {
+  const start = vi.fn(); const close = vi.fn(async () => {}); const prime = vi.fn();
   class Context {
-    state = 'running'; currentTime = 0; destination = {}; resume = resume; close = close;
+    state = state; currentTime = 0; destination = {}; sampleRate = 44100; resume = resume; close = close;
+    createBuffer() { return {}; }
+    createBufferSource() { return {buffer:null, connect:vi.fn(), start:prime}; }
     createOscillator() { return {type:'sine',frequency:{value:0},connect:vi.fn(),disconnect:vi.fn(),start,stop:vi.fn(),onended:null}; }
-    createGain() { return {gain:{setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),exponentialRampToValueAtTime:vi.fn()},connect:vi.fn(),disconnect:vi.fn()}; }
+    createGain() { return {gain:{setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),exponentialRampToValueAtTime:()=>{ throw new Error('exponential ramp'); }},connect:vi.fn(),disconnect:vi.fn()}; }
   }
-  vi.stubGlobal('AudioContext',Context); const sound = new MoveSound(); sound.play('move'); expect(start).not.toHaveBeenCalled();
-  sound.unlock(); sound.play('capture'); expect(start).toHaveBeenCalledTimes(2); expect(resume).toHaveBeenCalled(); sound.dispose(); expect(close).toHaveBeenCalled();
+  return {Context, start, close, prime};
+};
+test('audio needs user unlock and releases context on disposal', () => {
+  const resume = vi.fn(async () => {}); const {Context, start, close, prime} = mockAudio(resume);
+  vi.stubGlobal('AudioContext', Context); const sound = new MoveSound(); sound.play('move'); expect(start).not.toHaveBeenCalled();
+  sound.unlock(); expect(prime).toHaveBeenCalledTimes(1); sound.play('capture'); expect(start).toHaveBeenCalledTimes(2); expect(resume).toHaveBeenCalled(); sound.dispose(); expect(close).toHaveBeenCalled();
+});
+test('older Android WebViews fall back to webkitAudioContext', () => {
+  const {Context, start} = mockAudio();
+  vi.stubGlobal('AudioContext', undefined); vi.stubGlobal('webkitAudioContext', Context);
+  const sound = new MoveSound(); sound.unlock(); sound.play('move'); expect(start).toHaveBeenCalledTimes(1); sound.dispose();
+});
+test('a suspended Android context plays once resume resolves', async () => {
+  const start = vi.fn(); let state = 'suspended';
+  class Context {
+    get state() { return state; }
+    currentTime = 0; destination = {}; sampleRate = 44100;
+    resume = () => Promise.resolve().then(() => { state = 'running'; });
+    close = async () => {};
+    createBuffer() { return {}; }
+    createBufferSource() { return {buffer:null, connect:vi.fn(), start:vi.fn()}; }
+    createOscillator() { return {type:'sine',frequency:{value:0},connect:vi.fn(),disconnect:vi.fn(),start,stop:vi.fn(),onended:null}; }
+    createGain() { return {gain:{setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn()},connect:vi.fn(),disconnect:vi.fn()}; }
+  }
+  vi.stubGlobal('AudioContext', Context);
+  const sound = new MoveSound(); sound.unlock(); sound.play('move'); expect(start).not.toHaveBeenCalled();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(start).toHaveBeenCalledTimes(1); sound.dispose();
 });
