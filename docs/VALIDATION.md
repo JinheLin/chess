@@ -52,5 +52,10 @@
 - 发布回归覆盖桌面和 Pixel 7 模拟、三局连续真实引擎对弈、切换执棋、搜索期间认输、真实引擎将死、刷新恢复、PGN 导出和错误重试。
 - `PLAYWRIGHT_CHANNEL=chrome npm run test:release`：35 项通过，1 项按设计跳过（移动端鼠标拖拽）；完整生产回归通过。
 - GitHub Pages 发布前自动执行全套检查，发布包同时包含应用及固定版本 Stockfish 源码。
+- 已发布版本 `9478676`：https://jinhelin.github.io/chess/ 。[发布工作流](https://github.com/JinheLin/chess/actions/runs/38096844956) 与 Release checks 均成功。
+- `PLAYWRIGHT_CHANNEL=chrome PLAYWRIGHT_BASE_URL=https://jinhelin.github.io/chess/ npm run test:release`：线上完整回归 35 项通过、1 项按设计跳过、0 项失败；包含桌面和移动布局的三局连续真实 AI 对弈。
+- 线上应用源码、固定版本 Stockfish 源码及 GPL 许可下载均返回 HTTP 200。JS/WASM MIME、缺失资源 404、刷新恢复、PGN 下载已由线上测试验证。
+
+线上产物对应 `9478676`；随后验收记录及线上测试入口的提交不修改应用产物。
 
 浏览器覆盖范围仍为 Chromium；真实手机触摸拖拽、Safari/Firefox 未验证。

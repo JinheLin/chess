@@ -34,6 +34,12 @@ build 脚本在调用准备资源、类型检查及 Vite 前剔除代理环境�
 
 打开 HTTPS 页面，验证 JS/WASM 为 200 和正确 MIME；完成一组真实 AI 走棋；刷新保持棋谱、导出 PGN；核对 source/chess-lab.tar.gz、source/stockfish-19.tar.gz、引擎许可下载。
 
+可直接对线上运行相同的浏览器验收（每个用例使用独立浏览器存档）：
+
+```sh
+PLAYWRIGHT_BASE_URL=https://jinhelin.github.io/chess/ npm run test:release
+```
+
 源码下载对应发布版本；应用和引擎的授权说明见 package.json、THIRD_PARTY_NOTICES.txt 和 engine/COPYING.txt。运行时不读取 CDN。
 
 ## 回滚

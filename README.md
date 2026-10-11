@@ -1,6 +1,8 @@
 # Chess Lab
 
-浏览器中的国际象棋。M0–M3 已完成，M4 发布验证与 GitHub Pages 工作流已配置：本地双人及 Stockfish 人机对弈，无后端。
+浏览器中的国际象棋。M0–M4 已完成：本地双人及 Stockfish 人机对弈，无后端。
+
+在线体验：[Chess Lab](https://jinhelin.github.io/chess/)。
 
 需要 Node.js 22.12+。
 
