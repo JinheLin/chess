@@ -1,8 +1,19 @@
+import type { Square } from 'chess.js';
 import type { GameState } from '../game/GameState';
-export type SoundKind = 'move' | 'capture' | 'check' | 'end';
+export type SoundKind = 'move' | 'capture' | 'check' | 'mate' | 'end';
+export type BoardEffect = 'capture' | 'check' | 'mate';
+/** The strongest event on the latest move. Check outranks a capture; checkmate outranks both. */
+export function boardEffect(state: GameState): { kind: BoardEffect; square: Square } | null {
+  const last = state.history.at(-1);
+  if (!last) return null;
+  if (state.result?.includes('将死')) return { kind: 'mate', square: state.checkedKing ?? last.to };
+  if (state.inCheck) return { kind: 'check', square: state.checkedKing ?? last.to };
+  if (last.captured) return { kind: 'capture', square: last.to };
+  return null;
+}
 export function moveSound(previous: GameState, current: GameState): SoundKind | null {
   if (current.history.length !== previous.history.length + 1 || current.history.at(-1)?.before !== previous.fen) return null;
-  return current.result ? 'end' : current.inCheck ? 'check' : current.history.at(-1)?.captured ? 'capture' : 'move';
+  return boardEffect(current)?.kind ?? (current.result ? 'end' : 'move');
 }
 function createAudioContext(): AudioContext | null {
   const scope = globalThis as typeof globalThis & {webkitAudioContext?: typeof AudioContext};
@@ -45,18 +56,40 @@ export class MoveSound {
     } catch { /* Retry on the next touch if this WebView rejects start() while suspended. */ }
   }
   private emit(context: AudioContext, kind: SoundKind) {
-    const frequencies = {move:[440],capture:[280,200],check:[640,800],end:[440,550,660]}[kind];
+    const voices: Record<SoundKind, { type: OscillatorType; frequency: number; at: number; duration: number; peak: number }[]> = {
+      move: [{ type: 'sine', frequency: 520, at: 0, duration: 0.07, peak: 0.05 }],
+      capture: [
+        { type: 'triangle', frequency: 210, at: 0, duration: 0.13, peak: 0.22 },
+        { type: 'square', frequency: 140, at: 0.015, duration: 0.08, peak: 0.08 },
+      ],
+      check: [
+        { type: 'triangle', frequency: 740, at: 0, duration: 0.1, peak: 0.13 },
+        { type: 'triangle', frequency: 1040, at: 0.09, duration: 0.16, peak: 0.13 },
+      ],
+      mate: [
+        { type: 'sine', frequency: 494, at: 0, duration: 0.2, peak: 0.15 },
+        { type: 'sine', frequency: 370, at: 0.16, duration: 0.22, peak: 0.15 },
+        { type: 'triangle', frequency: 247, at: 0.34, duration: 0.4, peak: 0.18 },
+      ],
+      end: [
+        { type: 'sine', frequency: 440, at: 0, duration: 0.12, peak: 0.07 },
+        { type: 'sine', frequency: 554, at: 0.1, duration: 0.16, peak: 0.07 },
+      ],
+    };
     try {
-      frequencies.forEach((frequency, index) => {
-        const oscillator = context.createOscillator(); const gain = context.createGain();
-        const start = context.currentTime + index * 0.075;
-        oscillator.type = 'sine'; oscillator.frequency.value = frequency;
-        // Linear ramps only: Android WebView and older Chrome throw if an exponential ramp follows a zero gain.
-        gain.gain.setValueAtTime(0.0001, start); gain.gain.linearRampToValueAtTime(0.07, start + 0.008); gain.gain.linearRampToValueAtTime(0.0001, start + 0.11);
-        oscillator.connect(gain); gain.connect(context.destination);
-        oscillator.start(start); oscillator.stop(start + 0.12);
-        oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
-      });
+      for (const voice of voices[kind]) this.tone(context, voice);
     } catch { /* Unavailable audio never affects rules or controls. */ }
+  }
+  private tone(context: AudioContext, voice: { type: OscillatorType; frequency: number; at: number; duration: number; peak: number }) {
+    const oscillator = context.createOscillator(); const gain = context.createGain();
+    const start = context.currentTime + voice.at;
+    oscillator.type = voice.type; oscillator.frequency.value = voice.frequency;
+    // Linear ramps only: Android WebView and older Chrome throw if an exponential ramp follows a zero gain.
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(voice.peak, start + 0.012);
+    gain.gain.linearRampToValueAtTime(0.0001, start + voice.duration);
+    oscillator.connect(gain); gain.connect(context.destination);
+    oscillator.start(start); oscillator.stop(start + voice.duration + 0.02);
+    oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
   }
 }

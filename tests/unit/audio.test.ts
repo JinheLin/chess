@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { MoveSound, moveSound } from '../../src/audio/MoveSound';
+import { boardEffect, MoveSound, moveSound } from '../../src/audio/MoveSound';
 import { GameController } from '../../src/game/GameController';
 afterEach(()=>vi.unstubAllGlobals());
 test('only newly committed moves produce sound, not undo, restore, selection or status updates', () => {
@@ -8,11 +8,17 @@ test('only newly committed moves produce sound, not undo, restore, selection or 
   expect(moveSound(a,b)).toBe('move'); expect(moveSound(b,GameController.restore(game.save()).getSnapshot())).toBeNull();
   game.undo(); expect(moveSound(b,game.getSnapshot())).toBeNull();
 });
-test('capture, check and terminal moves have distinct cues', () => {
+test('capture, check and checkmate have distinct cues', () => {
   const game = new GameController(); game.move('e2','e4'); game.move('d7','d5'); const before = game.getSnapshot(); game.move('e4','d5');
-  expect(moveSound(before,game.getSnapshot())).toBe('capture');
-  const check = new GameController('7k/8/8/8/8/8/6K1/R7 w - - 0 1'); const c = check.getSnapshot(); check.move('a1','a8'); expect(moveSound(c,check.getSnapshot())).toBe('check');
-  const mate = new GameController('7k/5Q2/6K1/8/8/8/8/8 w - - 0 1'); const d = mate.getSnapshot(); mate.move('f7','g7'); expect(moveSound(d,mate.getSnapshot())).toBe('end');
+  const captured = game.getSnapshot();
+  expect(moveSound(before,captured)).toBe('capture'); expect(boardEffect(captured)).toEqual({kind:'capture',square:'d5'});
+  const check = new GameController('k7/8/8/8/8/8/6K1/r6R w - - 0 1'); const c = check.getSnapshot(); check.move('h1','a1');
+  const checked = check.getSnapshot();
+  expect(moveSound(c,checked)).toBe('check'); expect(boardEffect(checked)?.kind).toBe('check');
+  const mate = new GameController('7k/5Q2/6K1/8/8/8/8/8 w - - 0 1'); const d = mate.getSnapshot(); mate.move('f7','g7');
+  expect(moveSound(d,mate.getSnapshot())).toBe('mate'); expect(boardEffect(mate.getSnapshot())?.kind).toBe('mate');
+  const takingMate = new GameController('6k1/6p1/6K1/8/8/8/8/Q7 w - - 0 1'); const e = takingMate.getSnapshot(); takingMate.move('a1','g7');
+  expect(moveSound(e,takingMate.getSnapshot())).toBe('mate');
 });
 test('audio remains optional if browser blocks or lacks Web Audio', () => {
   vi.stubGlobal('AudioContext',undefined); const sound = new MoveSound();

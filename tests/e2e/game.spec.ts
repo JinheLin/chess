@@ -41,9 +41,19 @@ test('illegal move leaves turn unchanged and flip retains position', async ({pag
   await move(page,'e2','e4');
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('黑方走棋');
 });
+test('capture and check mark the board', async ({page}) => {
+  await move(page,'e2','e4'); await move(page,'d7','d5'); await move(page,'e4','d5');
+  await expect(page.getByTestId('square-d5').locator('.square-fx.capture')).toBeVisible();
+  await page.getByRole('button',{name:'开始新局'}).click(); await page.getByRole('button',{name:'确认新局'}).click();
+  await move(page,'e2','e4'); await move(page,'f7','f6'); await move(page,'d1','h5');
+  await expect(page.getByRole('status', {name:'对局状态'})).toContainText('将军');
+  await expect(page.getByTestId('square-e8').locator('.square-fx.check')).toBeVisible();
+});
 test('finish a complete game and undo checkmate', async ({page}) => {
   for (const [from,to] of [['f2','f3'],['e7','e5'],['g2','g4'],['d8','h4']]) await move(page,from,to);
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('黑方获胜 · 将死');
+  await expect(page.getByTestId('square-e1').locator('.square-fx.mate')).toBeVisible();
+  await expect(page.locator('.mate-banner')).toHaveText('将死');
   await expect(page.getByRole('button',{name:'认输',exact:true})).toBeDisabled();
   await move(page,'a2','a3');
   await openTools(page);

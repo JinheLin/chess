@@ -1,12 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Chessboard } from 'react-chessboard';
 import type { Square } from 'chess.js';
+import { boardEffect } from '../audio/MoveSound';
+import type { BoardEffect } from '../audio/MoveSound';
 import type { GameController } from '../game/GameController';
 import type { GameState } from '../game/GameState';
 
 export function GameBoard({ controller, state, flipped }: { controller: GameController; state: GameState; flipped: boolean }) {
   const [selected, select] = useState<Square | null>(null);
+  const [fx, setFx] = useState<{ ply: number; kind: BoardEffect; square: Square } | null>(null);
+  const previousPly = useRef(state.history.length);
+  useEffect(() => {
+    const ply = state.history.length;
+    const grew = ply === previousPly.current + 1;
+    previousPly.current = ply;
+    if (!grew) { setFx(null); return; }
+    const effect = boardEffect(state);
+    setFx(effect ? { ply, ...effect } : null);
+  }, [state]);
+  useEffect(() => {
+    if (!fx) return;
+    const timer = window.setTimeout(() => setFx(current => current?.ply === fx.ply ? null : current), fx.kind === 'mate' ? 1400 : 900);
+    return () => window.clearTimeout(timer);
+  }, [fx]);
   const styles: Record<string, CSSProperties> = {};
   const last = state.history.at(-1);
   if (last) for (const square of [last.from, last.to]) styles[square] = { backgroundColor: '#cfcb78' };
@@ -22,7 +39,7 @@ export function GameBoard({ controller, state, flipped }: { controller: GameCont
     }
     select(selected !== square && controller.canSelect(square) ? square : null);
   };
-  return <div className="board-frame" aria-label="国际象棋棋盘">
+  return <div className={`board-frame${fx?.kind === 'mate' ? ' mate-shake' : ''}`} aria-label="国际象棋棋盘">
     <Chessboard options={{
       id: 'chess-lab', position: state.fen, boardOrientation: flipped ? 'black' : 'white',
       darkSquareStyle: { backgroundColor: '#6b8b78' }, lightSquareStyle: { backgroundColor: '#eeecdf' },
@@ -34,8 +51,11 @@ export function GameBoard({ controller, state, flipped }: { controller: GameCont
       onPieceDragCancel: () => select(null),
       onSquareClick: ({ square }) => click(square as Square),
       onPieceDrop: ({ sourceSquare, targetSquare }) => { select(null); return !!targetSquare && controller.move(sourceSquare as Square, targetSquare as Square); },
-      squareRenderer: ({ square, children }) => <div data-testid={`square-${square}`} style={{width:'100%',height:'100%',...styles[square]}}>{children}</div>,
+      squareRenderer: ({ square, children }) => <div data-testid={`square-${square}`} className="square-cell" style={{width:'100%',height:'100%',...styles[square]}}>{children}{fx?.square === square && <span className={`square-fx ${fx.kind}`} />}</div>,
     }} />
+    {fx?.kind === 'check' && <span className="board-fx check" />}
+    {fx?.kind === 'mate' && <span className="board-fx mate" />}
+    {fx?.kind === 'mate' && <div className="mate-banner" aria-hidden="true">将死</div>}
     {state.phase === 'ENGINE_LOADING' && <div className="board-loading" aria-hidden="true"><span className="spinner" /><span>正在准备 Stockfish</span></div>}
   </div>;
 }
