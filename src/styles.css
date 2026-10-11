@@ -78,3 +78,40 @@
   .sheet-backdrop{display:block;position:fixed;inset:0;z-index:20;border:0;border-radius:0;padding:0;background:#192c2873}
   .engine-error{margin:0 4px 8px}
 }
+@media (min-width:721px) and (max-width:1400px) and (max-height:1100px) and (orientation:landscape){
+  html,body,#root{height:100%}
+  body{overflow:hidden;overscroll-behavior:none}
+  .app-shell{max-width:none;width:100%;height:100dvh;margin:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom));overflow:hidden;display:flex;flex-direction:column}
+  .site-header,.page-heading,.site-footer,.tip,.game-meta,.live-label,.desktop-status p,.board-caption>span{display:none}
+  .sheet-license{display:block;font-size:11px;color:#7c8b72;text-align:center;padding:2px 0 4px}
+  main{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .session-notice{margin:0 0 8px;flex-shrink:0}
+  .game-layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(260px,30vw,360px);grid-template-rows:minmax(0,1fr);gap:16px;align-items:stretch}
+  .board-column{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .board-slot{flex:1;min-height:0;display:grid;place-items:center;container-type:size}
+  .board-slot .board-frame{width:min(100cqw,100cqh);height:min(100cqw,100cqh);max-width:none;border-width:4px;touch-action:none}
+  .player-block{display:flex;align-items:center;gap:8px;padding:0 2px;flex-shrink:0}
+  .player-block .player{height:36px;flex:1;min-width:0;padding:0}
+  .player-status,.captured-label{display:none}
+  .avatar{width:28px;height:28px;font-size:16px;border-radius:8px}
+  .player strong,.player small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .captured{min-height:0;font-size:16px;justify-content:flex-end}
+  .board-caption{flex-shrink:0;border:0;padding-top:6px;justify-content:flex-end}
+  .side-column{display:flex;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;gap:12px}
+  .game-panel,.personality-panel,.save-tools,.sheet-license,.action-dock{flex-shrink:0}
+  .game-panel{overflow:visible}
+  .game-panel{padding:12px 14px 4px}
+  .turn-card{margin:8px 0;padding:8px 12px}
+  .action-dock{margin-top:-12px;padding:0 14px 12px}
+  .personality-panel{margin-bottom:0;padding:10px 12px}
+  .persona-settings{margin-top:8px}
+  .persona-context{display:none}
+  .persona-bubble{min-height:0;padding:8px 10px;font-size:13px;line-height:1.45}
+  .personality-panel details{margin-top:6px}
+  .history-section{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .history-section .section-title,.history-head,.history-footer{flex-shrink:0}
+  .history-section .section-title{padding:10px 14px}
+  .history-scroll{flex:1 1 auto;height:auto;min-height:0}
+  .empty-history{padding:8px 10px}
+  .empty-history>span{font-size:20px}
+}
