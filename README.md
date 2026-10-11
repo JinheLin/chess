@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-打开 http://localhost:5173 ，默认执白对弈中级 Stockfish。
+打开 http://localhost:5173 ，默认执白对弈初级 Stockfish。
 点击「对局设置」选择执白/执黑、初级/中级/高级，或切回本地双人；应用设置会确认开始新局。
 
 ## 功能

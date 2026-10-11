@@ -23,7 +23,7 @@ export class GameController {
   private engineError: string | null = null;
   private engineFactory: (() => ChessEngine) | null = null;
 
-  constructor(fen?: string, settings: GameSettings = { mode: 'local', playerColor: 'w', difficulty: 1 }) {
+  constructor(fen?: string, settings: GameSettings = { mode: 'local', playerColor: 'w', difficulty: 0 }) {
     this.chess = new Chess(fen);
     this.initialFen = this.chess.fen();
     this.settings = { ...settings };

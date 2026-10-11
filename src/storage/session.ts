@@ -4,7 +4,7 @@ export interface Preferences { flipped: boolean; sound: boolean }
 export interface StoragePort { getItem(key: string): string | null; setItem(key: string, value: string): void }
 const browserStorage = () => window.localStorage;
 export function loadSession(storage: () => StoragePort = browserStorage) {
-  const fresh = () => ({ controller: new GameController(undefined, {mode:'ai',playerColor:'w',difficulty:1}), preferences: {flipped:false,sound:true}, notice: '' });
+  const fresh = () => ({ controller: new GameController(undefined, {mode:'ai',playerColor:'w',difficulty:0}), preferences: {flipped:false,sound:true}, notice: '' });
   let raw: string | null;
   try { raw = storage().getItem(SESSION_KEY); }
   catch { return { ...fresh(), notice: '浏览器不允许本地保存，本局仍可正常对弈。' }; }

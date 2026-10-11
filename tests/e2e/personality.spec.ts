@@ -6,7 +6,7 @@ test('personality settings persist independently and reset stories on new games'
   await expect(page.getByLabel('棋手人格')).toContainText('好胜');
   await page.reload();
   await expect(page.getByLabel('棋手性格')).toHaveValue('victor');await expect(page.getByLabel('互动频率')).toHaveValue('quiet');
-  await page.getByRole('button',{name:'对局设置',exact:true}).click();await expect(page.getByLabel('AI 难度')).toHaveValue('1');await page.getByRole('button',{name:'应用并开始新局'}).click();
+  await page.getByRole('button',{name:'对局设置',exact:true}).click();await expect(page.getByLabel('AI 难度')).toHaveValue('0');await page.getByRole('button',{name:'应用并开始新局'}).click();
   await page.getByRole('button',{name:'认输',exact:true}).click();await page.getByRole('button',{name:'确认认输'}).click();
   await expect(page.getByRole('status',{name:'棋手对话'})).toContainText('这盘我赢了');
   await page.getByText('本局对话 · 1',{exact:true}).click();await expect(page.getByLabel('对话历史')).toContainText('认输');
