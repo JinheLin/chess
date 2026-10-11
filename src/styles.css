@@ -115,3 +115,10 @@
   .empty-history{padding:8px 10px}
   .empty-history>span{font-size:20px}
 }
+.board-frame{position:relative}
+.spinner{width:22px;height:22px;border:3px solid #d7e3d4;border-top-color:#3d6a4c;border-radius:50%;display:block;animation:engine-spin .7s linear infinite}
+.turn-card .spinner{width:28px;height:28px}
+.mobile-status .spinner{width:16px;height:16px;border-width:2px}
+.board-loading{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#f7f6f0d9;color:#315740;font-size:14px;font-weight:650}
+.board-loading .spinner{width:40px;height:40px;border-width:4px}
+@keyframes engine-spin{to{transform:rotate(360deg)}}

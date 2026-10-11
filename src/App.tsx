@@ -44,7 +44,7 @@ export default function App() {
     <div><strong>{colorName(color)}</strong><small>{isAI ? color === state.settings.playerColor ? '你' : `Stockfish · ${difficultyName}` : `本地玩家 ${color === 'w' ? '01' : '02'}`}</small></div>
     <span className="player-status">{state.result ? '对局结束' : state.turn === color ? '● 正在走棋' : '等待走棋'}</span>
   </div><CapturedPieces history={state.history} color={color} /></div>;
-  const statusIcon = state.result ? '⚑' : state.turn === 'w' ? '♔' : '♚';
+  const statusIcon = state.phase === 'ENGINE_LOADING' ? <span className="spinner" /> : state.result ? '⚑' : state.turn === 'w' ? '♔' : '♚';
   const statusDetail = state.result ? '再来一局，探索新的可能' : state.phase === 'AI_THINKING' ? '你可以随时悔棋或开始新局' : state.phase === 'ENGINE_LOADING' ? '首次加载可能需要几秒钟' : state.inCheck ? '王受到攻击，请解除将军' : '从容思考，落子有声';
   const soundLabel = preferences.sound ? '♪ 音效开' : '♪ 音效关';
   return <div className={`app-shell${toolsOpen ? ' tools-open' : ''}`} onPointerDownCapture={unlockSound} onTouchStartCapture={unlockSound} onKeyDownCapture={unlockSound}>

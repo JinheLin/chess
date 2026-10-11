@@ -36,5 +36,6 @@ export function GameBoard({ controller, state, flipped }: { controller: GameCont
       onPieceDrop: ({ sourceSquare, targetSquare }) => { select(null); return !!targetSquare && controller.move(sourceSquare as Square, targetSquare as Square); },
       squareRenderer: ({ square, children }) => <div data-testid={`square-${square}`} style={{width:'100%',height:'100%',...styles[square]}}>{children}</div>,
     }} />
+    {state.phase === 'ENGINE_LOADING' && <div className="board-loading" aria-hidden="true"><span className="spinner" /><span>正在准备 Stockfish</span></div>}
   </div>;
 }

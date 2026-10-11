@@ -12,6 +12,18 @@ async function configure(page: Page, color: 'w'|'b', difficulty: string) {
   await page.getByLabel('AI 难度').selectOption(difficulty);
   await page.getByRole('button',{name:'应用并开始新局'}).click(); await closeTools(page);
 }
+test('engine startup shows a spinner until the board is ready', async ({page}) => {
+  await page.route('**/*stockfish-19-lite-single.wasm*', async route => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    await route.continue();
+  });
+  await page.goto('./');
+  await expect(page.locator('.board-loading')).toBeVisible();
+  await expect(page.locator('.board-loading .spinner')).toHaveCSS('animation-name', 'engine-spin');
+  await expect(status(page)).toContainText('正在准备');
+  await expect(status(page)).toContainText('白方走棋', {timeout:20000});
+  await expect(page.locator('.board-loading')).toHaveCount(0);
+});
 test('real WASM engine responds, undo restores both plies, and new game resets', async ({page}) => {
   const errors: string[] = []; page.on('pageerror', error=>errors.push(error.message));
   await page.goto('./'); await expect(status(page)).toContainText('白方走棋',{timeout:20000});
