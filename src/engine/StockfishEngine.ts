@@ -20,7 +20,7 @@ export class StockfishEngine implements ChessEngine, AnalysisEngine {
   private queue: Promise<unknown> = Promise.resolve();
   private waiter: { match: (line: string) => boolean; resolve: (line: string) => void; reject: (error: Error) => void; extend?: () => void } | null = null;
 
-  // Startup covers the WASM download. Progress restarts that clock; a search still uses timeoutMs.
+  // Startup covers the WASM download. A search still uses timeoutMs.
   constructor(private readonly createWorker: () => EngineWorker = () => new Worker(
     `${import.meta.env.BASE_URL}engine/stockfish-19-lite-single.js?v=3`,
   ), private readonly timeoutMs = 20000, private readonly startupTimeoutMs = 60000) {}
