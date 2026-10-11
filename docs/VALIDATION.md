@@ -71,3 +71,5 @@
 - 内置浏览器检查：人物矢量头像、人物/频率选择和气泡显示正常；移动布局由 Pixel 7 模拟回归覆盖。
 
 范围：离线事件台词；没有外部语言模型、语音、开局命名或玩家聊天。短时间裁判属于保守启发式，不是客观棋理证明；不足以稳定判断时不评价走法质量。故事在当前会话内保留，刷新/悔棋/换人会清空；人物偏好单独持久化。Safari/Firefox 与真实移动硬件尚未验证。
+
+M3.5 已发布提交 `688e1b6`：[发布记录](https://github.com/JinheLin/chess/actions/runs/38117090936)。线上运行 `PLAYWRIGHT_CHANNEL=chrome PLAYWRIGHT_PRODUCTION=1 PLAYWRIGHT_BASE_URL=https://jinhelin.github.io/chess/ npm run test:e2e -- tests/e2e/personality.spec.ts`，桌面及移动共 4 项全部通过。
