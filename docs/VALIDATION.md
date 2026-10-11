@@ -73,3 +73,14 @@
 范围：离线事件台词；没有外部语言模型、语音、开局命名或玩家聊天。短时间裁判属于保守启发式，不是客观棋理证明；不足以稳定判断时不评价走法质量。故事在当前会话内保留，刷新/悔棋/换人会清空；人物偏好单独持久化。Safari/Firefox 与真实移动硬件尚未验证。
 
 M3.5 已发布提交 `688e1b6`：[发布记录](https://github.com/JinheLin/chess/actions/runs/38117090936)。线上运行 `PLAYWRIGHT_CHANNEL=chrome PLAYWRIGHT_PRODUCTION=1 PLAYWRIGHT_BASE_URL=https://jinhelin.github.io/chess/ npm run test:e2e -- tests/e2e/personality.spec.ts`，桌面及移动共 4 项全部通过。
+
+# 棋手语音验收
+
+2026-10-11。
+
+- lint、typecheck、93 项单元测试、build、verify:dist 通过。构建继续通过脚本清除代理变量。
+- 单元测试验证显式开启、中文声音优先、只朗读新消息、停止/替换、静音/新局/悔棋/换人/卸载取消、过期回调隔离、错误与启动超时降级、不支持浏览器、重连不重播。
+- 浏览器新增语音测试通过注入可观察的 SpeechSynthesis 验证朗读内容和取消指令，不把模拟器结果当作扬声器听感验证。
+- 本机内置浏览器使用真实 Web Speech API 点击开启后显示「正在朗读」，关闭后恢复关闭状态；未验证扬声器音质或各手机系统的中文声音可用性。
+- 每次刷新需要点击开启；浏览器/系统提供声音，部分声音可能联网，不保证每个设备拥有独立的人物音色。
+- `PLAYWRIGHT_CHANNEL=chrome npm run test:release`：43 项通过，1 项移动鼠标拖拽按设计跳过；桌面与 Pixel 7 模拟全部功能回归通过。

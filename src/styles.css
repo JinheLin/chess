@@ -24,3 +24,6 @@
 .persona-avatar { flex-shrink: 0; overflow: hidden; }
 .persona-context { display: block; color: #718075; font-size: 11px; margin-top: 14px; }
 .persona-bubble { margin-top: 7px; }
+.persona-voice { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+.persona-voice button { flex-shrink: 0; padding: 7px 10px; font-size: 12px; }
+.persona-voice small { font-size: 11px; color: #647369; line-height: 1.5; }
