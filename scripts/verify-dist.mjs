@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
-for (const extension of ['js','wasm']) {
-  const name = `stockfish-19-lite-single.${extension}`;
-  const shipped = await readFile(`dist/engine/${name}`);
-  assert.equal(hash(shipped),hash(await readFile(`node_modules/stockfish/bin/${name}`)),`${name} changed`);
-  if (extension === 'wasm') assert(WebAssembly.validate(shipped),'Invalid WebAssembly');
-}
+const prefix = await readFile('scripts/stockfish-worker-prefix.js');
+const originalJs = await readFile('node_modules/stockfish/bin/stockfish-19-lite-single.js');
+const shippedJs = await readFile('dist/engine/stockfish-19-lite-single.js');
+assert.equal(hash(shippedJs), hash(Buffer.concat([prefix, originalJs])), 'stockfish js changed');
+const shippedWasm = await readFile('dist/engine/stockfish-19-lite-single.wasm');
+assert.equal(hash(shippedWasm), hash(await readFile('node_modules/stockfish/bin/stockfish-19-lite-single.wasm')), 'stockfish wasm changed');
+assert(WebAssembly.validate(shippedWasm), 'Invalid WebAssembly');
 assert.deepEqual((await readdir('dist/engine')).sort(),['COPYING.txt','stockfish-19-lite-single.js','stockfish-19-lite-single.wasm']);
 assert((await readFile('dist/engine/COPYING.txt','utf8')).includes('GNU GENERAL PUBLIC LICENSE'));
 assert((await readFile('dist/THIRD_PARTY_NOTICES.txt','utf8')).includes('54fde71d90c7c403964f6cacef48f7bbec495df1'));

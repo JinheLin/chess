@@ -18,11 +18,12 @@ export class StockfishEngine implements ChessEngine, AnalysisEngine {
   private closed = false;
   private skill = 8;
   private queue: Promise<unknown> = Promise.resolve();
-  private waiter: { match: (line: string) => boolean; resolve: (line: string) => void; reject: (error: Error) => void } | null = null;
+  private waiter: { match: (line: string) => boolean; resolve: (line: string) => void; reject: (error: Error) => void; extend?: () => void } | null = null;
 
+  // Startup covers the WASM download. Progress restarts that clock; a search still uses timeoutMs.
   constructor(private readonly createWorker: () => EngineWorker = () => new Worker(
-    `${import.meta.env.BASE_URL}engine/stockfish-19-lite-single.js`,
-  ), private readonly timeoutMs = 20000) {}
+    `${import.meta.env.BASE_URL}engine/stockfish-19-lite-single.js?v=2`,
+  ), private readonly timeoutMs = 20000, private readonly startupTimeoutMs = 60000) {}
 
   private reset(error: Error) {
     const worker = this.worker;
@@ -38,16 +39,20 @@ export class StockfishEngine implements ChessEngine, AnalysisEngine {
     this.waiter = null;
   }
 
-  private command(command: string, match: (line: string) => boolean, timeout = this.timeoutMs) {
+  private command(command: string, match: (line: string) => boolean, timeout = this.timeoutMs, extendable = false) {
     return new Promise<string>((resolve, reject) => {
       if (!this.worker || this.closed) { reject(new Error('引擎已关闭')); return; }
+      let timer = setTimeout(() => this.reset(new Error('引擎响应超时，请重试')), timeout);
       const finish = (error?: Error, line = '') => {
         clearTimeout(timer);
         this.waiter = null;
         if (error) reject(error); else resolve(line);
       };
-      const timer = setTimeout(() => this.reset(new Error('引擎响应超时，请重试')), timeout);
-      this.waiter = { match, resolve: line => finish(undefined, line), reject: error => finish(error) };
+      const arm = () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => this.reset(new Error('引擎响应超时，请重试')), timeout);
+      };
+      this.waiter = { match, resolve: line => finish(undefined, line), reject: error => finish(error), extend: extendable ? arm : undefined };
       try { this.worker.postMessage(command); }
       catch { this.reset(new Error('无法向引擎发送指令')); }
     });
@@ -62,16 +67,22 @@ export class StockfishEngine implements ChessEngine, AnalysisEngine {
       worker.onmessage = event => {
         if (this.worker !== worker || typeof event.data !== 'string') return;
         for (const line of event.data.split(/\r?\n/)) {
-          if (this.waiter?.match(line.trim())) this.waiter.resolve(line.trim());
+          const text = line.trim();
+          if (text === 'info string chess-lab-engine-failed') {
+            this.reset(new Error('Stockfish 加载失败，请检查浏览器是否支持 WebAssembly'));
+            return;
+          }
+          if (text.startsWith('info string chess-lab-engine-progress')) { this.waiter?.extend?.(); continue; }
+          if (this.waiter?.match(text)) this.waiter.resolve(text);
         }
       };
       worker.onerror = () => { if (this.worker === worker) this.reset(new Error('Stockfish 加载失败，请检查浏览器是否支持 WebAssembly')); };
       worker.onmessageerror = () => { if (this.worker === worker) this.reset(new Error('引擎通信失败，请重试')); };
       this.ready = (async () => {
-        await this.command('uci', line => line === 'uciok');
+        await this.command('uci', line => line === 'uciok', this.startupTimeoutMs, true);
         if (this.worker !== worker) throw aborted();
         worker.postMessage('setoption name Hash value 16');
-        await this.command('isready', line => line === 'readyok');
+        await this.command('isready', line => line === 'readyok', this.startupTimeoutMs);
       })();
       return this.ready;
     } catch {

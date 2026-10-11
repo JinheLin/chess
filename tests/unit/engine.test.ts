@@ -77,11 +77,36 @@ describe('Stockfish UCI adapter', () => {
   test('handshake and search timeouts terminate workers', async () => {
     vi.useFakeTimers();
     const worker = new WorkerMock(); worker.handshake = false;
-    const engine = new StockfishEngine(()=>worker,10);
+    const engine = new StockfishEngine(()=>worker,10,10);
     const loading = expect(engine.initialize()).rejects.toThrow('超时');
     await vi.advanceTimersByTimeAsync(11); await loading; expect(worker.terminated).toBe(true); engine.dispose();
     const next = setup(10); const pending = expect(next.engine.getBestMove('a',{movetimeMs:1})).rejects.toThrow('超时');
     await vi.advanceTimersByTimeAsync(25); await pending; expect(next.workers[0].terminated).toBe(true); next.engine.dispose();
+  });
+  test('download progress extends startup and a failed download is reported', async () => {
+    vi.useFakeTimers();
+    const worker = new WorkerMock(); worker.handshake = false;
+    const engine = new StockfishEngine(() => worker, 10, 30);
+    const loading = engine.initialize();
+    await vi.advanceTimersByTimeAsync(25);
+    worker.emit('info string chess-lab-engine-progress 1000');
+    await vi.advanceTimersByTimeAsync(25);
+    expect(worker.terminated).toBe(false);
+    worker.emit('uciok'); await flush(); worker.emit('readyok');
+    await loading; engine.dispose();
+    const failed = setup();
+    const rejected = expect(failed.engine.initialize()).rejects.toThrow('加载失败');
+    failed.workers[0].emit('info string chess-lab-engine-failed');
+    await rejected; expect(failed.workers[0].terminated).toBe(true); failed.engine.dispose();
+  });
+  test('download progress does not extend a search timeout', async () => {
+    vi.useFakeTimers();
+    const {engine,workers} = setup(10);
+    const pending = expect(engine.getBestMove('a',{movetimeMs:1})).rejects.toThrow('超时');
+    await vi.advanceTimersByTimeAsync(0);
+    workers[0].emit('info string chess-lab-engine-progress 1000');
+    await vi.advanceTimersByTimeAsync(25);
+    await pending; expect(workers[0].terminated).toBe(true); engine.dispose();
   });
   test('dispose rejects running and queued work', async () => {
     const {engine,workers} = setup();
