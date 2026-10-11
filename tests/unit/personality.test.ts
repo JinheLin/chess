@@ -83,7 +83,3 @@ test('sustained advantage builds confidence independently from character and pla
   for(let i=0;i<100;i++) manager.assess(200);
   expect(manager.state.confidence).toBe(0);
 });
-test('every-move scheduler bypasses timing and semantic cooldown but rejects duplicate plies',()=>{
-  const scheduler=new CommentaryScheduler();
-  for(let ply=1;ply<=20;ply++) {expect(scheduler.allow(event('capture',ply),'every',0)).toBe(true);expect(scheduler.allow(event('capture',ply),'every',0)).toBe(false);}
-});

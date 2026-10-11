@@ -29,19 +29,8 @@ test('real analysis reacts to an observed tactic without exposing a future varia
   await page.getByRole('button',{name:'悔棋'}).click();await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
   await expect(page.getByText('本局对话 · 0',{exact:true})).toBeVisible();
 });
-test('every move responds once for each side and legacy mute does not hide dialogue',async({page})=>{
-  await page.addInitScript(()=>localStorage.setItem('chess-lab.personality.v1',JSON.stringify({character:'alex',frequency:'every',muted:true})));
-  await page.goto('./');await expect(page.getByLabel('互动频率')).toHaveValue('every');
-  await expect(page.getByRole('switch')).toHaveCount(1);
-  await expect(page.getByRole('status',{name:'对局状态'})).toContainText('白方走棋',{timeout:20000});
-  await page.getByTestId('square-e2').click();await page.getByTestId('square-e4').click();
-  await expect(page.getByText('本局对话 · 2',{exact:true})).toBeVisible({timeout:15000});
-  await page.getByText('本局对话 · 2',{exact:true}).click();
-  await expect(page.getByLabel('对话历史').locator('li')).toHaveCount(2);
-  await expect(page.getByLabel('对话历史')).toContainText('你的兵从 e2 走到 e4');
-  await expect(page.getByLabel('对话历史')).toContainText('我的');
-  await page.getByRole('button',{name:'悔棋'}).click();await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
-  await expect(page.getByText('本局对话 · 0',{exact:true})).toBeVisible();
-  await page.getByTestId('square-d2').click();await page.getByTestId('square-d4').click();
-  await expect(page.getByText('本局对话 · 2',{exact:true})).toBeVisible({timeout:15000});
+test('removed every-move preference migrates to chatty',async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem('chess-lab.personality.v1',JSON.stringify({character:'alex',frequency:'every',muted:false})));
+  await page.goto('./');await expect(page.getByLabel('互动频率')).toHaveValue('chatty');
+  await expect(page.getByRole('option',{name:'每步一句'})).toHaveCount(0);
 });
