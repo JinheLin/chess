@@ -85,3 +85,9 @@ M3.5 已发布提交 `688e1b6`：[发布记录](https://github.com/JinheLin/ches
 - 每次刷新需要点击开启；浏览器/系统提供声音，部分声音可能联网，不保证每个设备拥有独立的人物音色。
 - `PLAYWRIGHT_CHANNEL=chrome npm run test:release`：43 项通过，1 项移动鼠标拖拽按设计跳过；桌面与 Pixel 7 模拟全部功能回归通过。
 - 语音版本 `86681de` 已成功发布：[Pages 发布记录](https://github.com/JinheLin/chess/actions/runs/38126593504)。线上桌面/移动语音专项 `tests/e2e/speech.spec.ts` 共 4 项通过（语音接口模拟，验证播放控制，不验证音质）。
+
+# 简洁语音开关与每步一句
+
+2026-10-11。移除文字互动开关，只保留右上角语音滑动开关；旧静音偏好迁移为启用对话。增加每步一句，双方每次落子立即获得事实回应，终局用结束语，不重复补发分析评论。
+
+lint、typecheck、94 项单元测试、build、verify:dist 均通过；`PLAYWRIGHT_CHANNEL=chrome npm run test:release` 45 项通过、1 项按设计跳过。新增桌面/移动测试验证旧偏好迁移、只有一个开关、每步回应及悔棋后重新走棋，保留语音控制回归。

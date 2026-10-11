@@ -28,7 +28,7 @@ export class CommentarySpeech {
       const changed = last?.id !== previous.history.at(-1)?.id;
       const invalid = next.settings.muted || !last || next.settings.character !== previous.settings.character;
       previous = next;
-      if (invalid) {this.stop();return;}
+      if (invalid) {this.stop();if(next.settings.muted && this.state.enabled) this.publish({enabled:false});return;}
       if (changed && this.state.enabled) this.say(last.text,last.character);
     });
   }

@@ -2,7 +2,7 @@ import type { GameController } from '../game/GameController';
 import type { GameState } from '../game/GameState';
 import type { AnalysisEngine } from '../engine/AnalysisEngine';
 import { StockfishEngine } from '../engine/StockfishEngine';
-import { moveEvents, relativeScore, uci } from './PositionAnalyzer';
+import { moveEvents, relativeScore, stepEvent, uci } from './PositionAnalyzer';
 import type { ChessEvent } from './PositionAnalyzer';
 import { CommentaryGenerator, CommentaryScheduler, PersonalityManager } from './Personality';
 import type { Character, Commentary, Frequency } from './Personality';
@@ -11,11 +11,11 @@ const defaults:InteractionSettings = {character:'alex',frequency:'normal',muted:
 export function loadInteraction():InteractionSettings {
   try {
     const data = JSON.parse(localStorage.getItem('chess-lab.personality.v1') ?? 'null');
-    if (data && ['alex','victor','professor'].includes(data.character) && ['quiet','normal','chatty'].includes(data.frequency) && typeof data.muted === 'boolean') return data;
+    if (data && ['alex','victor','professor'].includes(data.character) && ['quiet','normal','chatty','every'].includes(data.frequency) && typeof data.muted === 'boolean') return {character:data.character,frequency:data.frequency,muted:false};
   } catch { /* Interaction preferences must never prevent playing. */ }
   return {...defaults};
 }
-const priority = ['end','reversal','blunder','mistake','brilliant','mate','promotion','check','capture','balanced'];
+const priority = ['end','reversal','blunder','mistake','brilliant','mate','promotion','check','capture','balanced','move'];
 export interface PersonalitySnapshot {
   settings:InteractionSettings; history:readonly Commentary[];
   emotion:PersonalityManager['state']; status:string; storageFailed:boolean;
@@ -72,6 +72,7 @@ export class PersonalityEngine {
     const ranked = [...events].sort((a,b)=>priority.indexOf(a.kind)-priority.indexOf(b.kind));
     const event = ranked.find(e=>e.kind !== 'balanced') ?? (this.balanced >= 6 ? ranked[0] : undefined);
     if (!event) return;
+    if (this.snapshot.settings.frequency === 'every' && this.snapshot.history.some(message=>message.ply===event.ply) && event.kind !== 'end') return;
     this.manager.update(event);
     if (!this.scheduler.allow(event,this.snapshot.settings.frequency,Date.now())) {this.publish();return;}
     const text = this.generator.generate(event,this.snapshot.settings.character,this.manager);
@@ -94,6 +95,9 @@ export class PersonalityEngine {
       return;
     }
     const changed = state.history.length !== previous.history.length || rewound;
+    if (!rewound && this.snapshot.settings.frequency === 'every' && state.history.length > previous.history.length) {
+      for(let i=previous.history.length;i<state.history.length;i++) this.speak([stepEvent(state.history[i],i+1,state.settings.playerColor)]);
+    }
     if (changed || state.phase === 'AI_THINKING' || state.phase === 'ENGINE_LOADING') this.cancel();
     if (state.phase !== 'PLAYER_TURN' || this.abort || state.history.length <= this.analyzed) return;
     const abort = new AbortController(); this.abort = abort;

@@ -1,14 +1,12 @@
 import { test, expect } from '@playwright/test';
-test('personality settings are independent, persist, mute, and reset stories on new games',async({page})=>{
+test('personality settings persist independently and reset stories on new games',async({page})=>{
   await page.goto('./');
   await page.getByLabel('棋手性格').selectOption('victor');await page.getByLabel('互动频率').selectOption('quiet');
   await expect(page.getByLabel('棋手人格')).toContainText('Victor');
   await expect(page.getByLabel('棋手人格')).toContainText('好胜');
-  await page.getByRole('button',{name:'棋手互动静音'}).click();await page.reload();
+  await page.reload();
   await expect(page.getByLabel('棋手性格')).toHaveValue('victor');await expect(page.getByLabel('互动频率')).toHaveValue('quiet');
-  await expect(page.getByRole('button',{name:'棋手互动静音'})).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:'对局设置',exact:true}).click();await expect(page.getByLabel('AI 难度')).toHaveValue('1');await page.getByRole('button',{name:'应用并开始新局'}).click();
-  await page.getByRole('button',{name:'棋手互动静音'}).click();
   await page.getByRole('button',{name:'认输',exact:true}).click();await page.getByRole('button',{name:'确认认输'}).click();
   await expect(page.getByRole('status',{name:'棋手对话'})).toContainText('这盘我赢了');
   await page.getByText('本局对话 · 1',{exact:true}).click();await expect(page.getByLabel('对话历史')).toContainText('认输');
@@ -30,4 +28,20 @@ test('real analysis reacts to an observed tactic without exposing a future varia
   expect(dialogue.join('')).not.toMatch(/[a-h][1-8]/);
   await page.getByRole('button',{name:'悔棋'}).click();await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
   await expect(page.getByText('本局对话 · 0',{exact:true})).toBeVisible();
+});
+test('every move responds once for each side and legacy mute does not hide dialogue',async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem('chess-lab.personality.v1',JSON.stringify({character:'alex',frequency:'every',muted:true})));
+  await page.goto('./');await expect(page.getByLabel('互动频率')).toHaveValue('every');
+  await expect(page.getByRole('switch')).toHaveCount(1);
+  await expect(page.getByRole('status',{name:'对局状态'})).toContainText('白方走棋');
+  await page.getByTestId('square-e2').click();await page.getByTestId('square-e4').click();
+  await expect(page.getByText('本局对话 · 2',{exact:true})).toBeVisible({timeout:15000});
+  await page.getByText('本局对话 · 2',{exact:true}).click();
+  await expect(page.getByLabel('对话历史').locator('li')).toHaveCount(2);
+  await expect(page.getByLabel('对话历史')).toContainText('你的兵从 e2 走到 e4');
+  await expect(page.getByLabel('对话历史')).toContainText('我的');
+  await page.getByRole('button',{name:'悔棋'}).click();await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
+  await expect(page.getByText('本局对话 · 0',{exact:true})).toBeVisible();
+  await page.getByTestId('square-d2').click();await page.getByTestId('square-d4').click();
+  await expect(page.getByText('本局对话 · 2',{exact:true})).toBeVisible({timeout:15000});
 });

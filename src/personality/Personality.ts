@@ -5,11 +5,12 @@ export const CHARACTERS = {
   professor: {name:'Professor',style:'沉稳 · 克制',glyph:'P',intro:'不妨从容一些。让我们看看这盘棋会如何展开。'},
 } as const;
 export type Character = keyof typeof CHARACTERS;
-export type Frequency = 'quiet' | 'normal' | 'chatty';
+export type Frequency = 'quiet' | 'normal' | 'chatty' | 'every';
 export interface PersonalityState {confidence:number; frustration:number; respect:number; excitement:number}
 export interface Commentary {id:number; ply:number; text:string; fact:string; kind:EventKind; character:Character}
 type Lines = Record<Character, readonly [string,string]>;
 const lines: Record<EventKind, Lines> = {
+  move:{alex:['接着下吧。','棋盘又有了新变化。'],victor:['继续较量。','这一步，我记下了。'],professor:['我们继续观察局面。','一步一步来。']},
   check:{alex:['刚才那次将军，让我认真起来了。','王被点名了，这盘棋热闹起来了。'],victor:['将军？棋盘上的较量才刚开始。','王被盯上了。好，继续。'],professor:['这一步形成了将军。','刚才的将军形成了一次强制应对。']},
   capture:{alex:['又一次吃子。先别急着数战利品。','棋子少了一枚，故事还没讲完。'],victor:['吃到了？交换的账可还没算完。','先别为吃子得意，棋还长着呢。'],professor:['吃子已经发生，得失还需结合后续局面。','不能仅凭这次吃子判断谁占优。']},
   promotion:{alex:['兵走到底了！这一刻值得记住。','一枚小兵，终于换了新身份。'],victor:['升变了。看来棋盘又要热闹了。','小兵也有出头的时候。继续较量。'],professor:['兵已完成升变，棋盘上的力量配置改变了。','升变已经完成，需重新审视局面。']},
@@ -46,6 +47,7 @@ export class CommentaryScheduler {
   constructor(private random:()=>number = Math.random) {}
   allow(event:ChessEvent, frequency:Frequency, now:number) {
     if (event.kind === 'end') {if (this.ended) return false; this.ended = true; return true;}
+    if (frequency === 'every') {if(event.ply <= this.lastPly) return false;this.lastPly=event.ply;this.lastTime=now;return true;}
     const key = `${event.kind}:${event.actor}`;
     if (event.ply - (this.recent.get(key) ?? -100) < 12) return false;
     if (event.ply === this.lastPly || now - this.lastTime < (event.important ? 2500 : 12000)) return false;
@@ -59,6 +61,7 @@ export class CommentaryScheduler {
 export class CommentaryGenerator {
   private recent: {text:string;ply:number}[] = [];
   generate(event:ChessEvent, character:Character, manager:PersonalityManager) {
+    if(event.kind === 'move') return `${event.fact}。${lines.move[character][event.ply % 2]}`;
     let choices: readonly string[] = lines[event.kind][character];
     if (event.actor === 'ai' && ['mistake','blunder'].includes(event.kind)) choices = selfMistakes[character];
     if (event.kind === 'brilliant' && event.actor === 'ai') choices = character === 'victor' ? ['这步我算得还不错。继续接招。','这次计算没让我失望。'] : ['这步战术棋，我对自己的计算还算满意。','这次战术处理比较准确，继续下吧。'];

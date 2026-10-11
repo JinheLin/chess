@@ -1,6 +1,6 @@
 import type { Color, Move } from 'chess.js';
 import type { Evaluation, Score } from '../engine/AnalysisEngine';
-export type EventKind = 'check' | 'capture' | 'promotion' | 'brilliant' | 'mistake' | 'blunder' | 'reversal' | 'balanced' | 'mate' | 'end';
+export type EventKind = 'move' | 'check' | 'capture' | 'promotion' | 'brilliant' | 'mistake' | 'blunder' | 'reversal' | 'balanced' | 'mate' | 'end';
 export interface ChessEvent {
   kind: EventKind; ply: number; actor: 'player' | 'ai'; important: boolean;
   /** Only observed facts; no candidate variation is sent to the dialogue generator. */
@@ -31,4 +31,14 @@ export function moveEvents(move: Move, ply: number, player: Color, before?: Eval
   if (Math.abs(a.value) >= 150 && Math.abs(b.value) >= 150 && Math.sign(a.value) !== Math.sign(b.value)) events.push({...event('reversal','稳定评价的优势方发生变化',true),playerAdvantage:b.value});
   if (Math.abs(b.value) <= 40) events.push(event('balanced','稳定评价接近均势'));
   return events;
+}
+
+/** A neutral factual reply is always available, even with no engine evaluation. */
+export function stepEvent(move: Move, ply: number, player: Color): ChessEvent {
+  const names = {p:'兵',n:'马',b:'象',r:'车',q:'后',k:'王'};
+  const subject = move.color === player ? '你' : '我';
+  const fact = move.isKingsideCastle() || move.isQueensideCastle()
+    ? `${subject}完成了${move.isKingsideCastle() ? '王翼' : '后翼'}易位`
+    : `${subject}的${names[move.piece]}从 ${move.from} 走到 ${move.to}${move.captured ? `，吃掉了${names[move.captured]}` : ''}${move.promotion ? `，升变为${names[move.promotion]}` : ''}${move.san.includes('+') ? '，形成将军' : ''}`;
+  return {kind:'move',ply,actor:move.color === player ? 'player' : 'ai',important:false,fact};
 }

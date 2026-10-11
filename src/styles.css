@@ -27,3 +27,11 @@
 .persona-voice { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
 .persona-voice button { flex-shrink: 0; padding: 7px 10px; font-size: 12px; }
 .persona-voice small { font-size: 11px; color: #647369; line-height: 1.5; }
+.persona-settings { grid-template-columns: minmax(0, 1fr) 100px; }
+.persona-switch { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 7px; min-width: 66px; min-height: 44px; border-radius: 24px; padding: 8px 10px; background: #e9eeea; color: #526157; border: 1px solid #ced8d0; font-size: 12px; }
+.persona-switch span { width: 20px; height: 20px; background: white; border-radius: 50%; box-shadow: 0 1px 3px #0002; }
+.persona-switch[aria-checked="true"] { background: #285841; color: white; flex-direction: row-reverse; border-color: #285841; }
+.persona-switch:focus-visible { outline: 3px solid #8bb59a; outline-offset: 3px; }
+.persona-switch:disabled { opacity: .45; cursor: not-allowed; }
+
+.persona-heading .persona-switch { margin-left: auto; min-width: 84px; padding: 8px 10px; }
