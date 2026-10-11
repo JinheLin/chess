@@ -108,7 +108,7 @@ export class StockfishEngine implements ChessEngine, AnalysisEngine {
         const moves = options.initialFen && options.moves?.length ? ` moves ${options.moves.join(' ')}` : '';
         this.worker!.postMessage(`position fen ${position}${moves}`);
         const samples: Omit<Evaluation, 'stable'>[] = [];
-        const line = await this.command(`go movetime ${options.movetimeMs}${analysis ? ' depth 16' : ''}`, text => {
+        const line = await this.command(`go movetime ${options.movetimeMs}${analysis ? ' depth 16' : options.maxDepth ? ` depth ${options.maxDepth}` : ''}`, text => {
           if (analysis) {
             const info = parseInfo(text);
             if (info) {

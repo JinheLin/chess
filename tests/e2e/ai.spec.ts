@@ -53,3 +53,18 @@ test('failed WASM load is visible and retry recovers the same position', async (
   await expect(status(page)).toContainText('白方走棋',{timeout:20000});
   await move(page,'e2','e4'); await expect(page.locator('.history-footer')).toContainText('2 步',{timeout:15000});
 });
+test('entry difficulty plays either side and survives reload',async({page})=>{
+  await page.goto('./');
+  for(const color of ['w','b']) {
+    await page.getByRole('button',{name:'对局设置',exact:true}).click();
+    await page.getByLabel('AI 难度').selectOption({label:'入门'});await page.getByLabel('我的执棋').selectOption(color);
+    await page.getByRole('button',{name:'应用并开始新局'}).click();
+    if(color==='w') {
+      await expect(page.getByRole('status',{name:'对局状态'})).toContainText('白方走棋',{timeout:20000});
+      await page.getByTestId('square-e2').click();await page.getByTestId('square-e4').click();
+    }
+    await expect(page.locator('.history-footer')).toContainText(color==='w'?'2 步':'1 步',{timeout:20000});
+    await page.reload();await page.getByRole('button',{name:'对局设置',exact:true}).click();
+    await expect(page.getByLabel('AI 难度')).toHaveValue('3');await page.getByRole('button',{name:'取消',exact:true}).click();
+  }
+});

@@ -17,9 +17,9 @@ export function GameSettingsDialog({ settings, onClose, onStart }: {
           <option value="w">白方 · 我先走</option><option value="b">黑方 · AI 先走</option>
         </select></label>
         <label>AI 难度<select value={draft.difficulty} onChange={event => setDraft({ ...draft, difficulty: Number(event.target.value) as GameSettings['difficulty'] })}>
-          {DIFFICULTIES.map((difficulty, index) => <option key={index} value={index}>{difficulty.label}</option>)}
+          {[3,0,1,2].map(index => <option key={index} value={index}>{DIFFICULTIES[index].label}</option>)}
         </select></label>
-        <small>Stockfish 在本机思考。初级也有一定棋力。</small>
+        <small>入门会减少计算并偶尔漏看机会，适合熟悉规则；初级及以上使用 Stockfish 正常对弈。</small>
       </>}
     </div>
     <div className="dialog-actions"><button onClick={onClose}>取消</button><button className="primary" onClick={() => onStart(draft)}>应用并开始新局</button></div>

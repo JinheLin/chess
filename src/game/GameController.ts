@@ -1,3 +1,4 @@
+import { beginnerMove } from '../engine/BeginnerPolicy';
 import { Chess } from 'chess.js';
 import type { Color, Square } from 'chess.js';
 import { colorName, resultOf } from './ChessRules';
@@ -61,7 +62,7 @@ export class GameController {
     for (const move of this.chess.history({ verbose: true })) copy.move({ from: move.from, to: move.to, promotion: move.promotion });
     const loser = this.resignation ?? (this.chess.isCheckmate() ? this.chess.turn() : null);
     const result = loser ? loser === 'w' ? '0-1' : '1-0' : resultOf(this.chess) ? '1/2-1/2' : '*';
-    const player = (color: Color) => this.settings.mode === 'local' ? `Local ${color === 'w' ? 'White' : 'Black'}` : color === this.settings.playerColor ? 'Human' : `Stockfish 19 (Skill ${DIFFICULTIES[this.settings.difficulty].skill})`;
+    const player = (color: Color) => this.settings.mode === 'local' ? `Local ${color === 'w' ? 'White' : 'Black'}` : color === this.settings.playerColor ? 'Human' : `Stockfish 19 (Skill ${DIFFICULTIES[this.settings.difficulty].skill}${this.settings.difficulty === 3 ? ', Beginner policy' : ''})`;
     for (const [key, value] of Object.entries({ Event: 'Chess Lab', Site: 'Local', Date: this.startedAt.slice(0, 10).replaceAll('-', '.'), Round: '-', White: player('w'), Black: player('b'), Result: result })) copy.setHeader(key, value);
     return copy.pgn({ maxWidth: 80 }) + '\n';
   }
@@ -127,12 +128,13 @@ export class GameController {
         this.loading = false;
         this.publish();
         if (this.chess.turn() === this.settings.playerColor) return;
-        const uci = await engine.getBestMove(this.chess.fen(), {
-          movetimeMs: difficulty.movetimeMs, signal: abort.signal, initialFen: this.initialFen,
+        let uci = await engine.getBestMove(this.chess.fen(), {
+          movetimeMs: difficulty.movetimeMs, maxDepth:this.settings.difficulty === 3 ? 2 : undefined, signal: abort.signal, initialFen: this.initialFen,
           moves: this.chess.history({ verbose: true }).map(move => `${move.from}${move.to}${move.promotion ?? ''}`),
         });
         if (revision !== this.revision || abort.signal.aborted) return;
         if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)) throw new Error('AI 返回无效走法，请重试');
+        if (this.settings.difficulty === 3) uci = beginnerMove(uci,this.chess.moves({verbose:true}).map(move=>`${move.from}${move.to}${move.promotion ?? ''}`));
         try { this.chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }); }
         catch { throw new Error('AI 返回非法走法，棋局已保留，请重试'); }
         this.publish();

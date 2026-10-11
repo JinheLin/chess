@@ -1,5 +1,6 @@
 export interface SearchOptions {
   movetimeMs: number;
+  maxDepth?: number;
   signal?: AbortSignal;
   /** Replay from the original position so repetition history reaches the engine. */
   initialFen?: string;
@@ -15,4 +16,6 @@ export const DIFFICULTIES = [
   { label: '初级', skill: 0, movetimeMs: 300 },
   { label: '中级', skill: 8, movetimeMs: 650 },
   { label: '高级', skill: 16, movetimeMs: 1200 },
+  // Stable ID 3 preserves existing saved difficulty indices.
+  { label: '入门', skill: 0, movetimeMs: 120 },
 ] as const;

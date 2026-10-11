@@ -13,7 +13,7 @@ const object = (value: unknown): value is Record<string, unknown> => !!value && 
 export function validateSavedGame(value: unknown): SavedGame {
   if (!object(value) || value.version !== 1 || typeof value.initialFen !== 'string' || value.initialFen.length > 200 ||
       !Array.isArray(value.moves) || value.moves.length > 10000 || !value.moves.every(move => typeof move === 'string' && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move)) ||
-      !object(value.settings) || !['local','ai'].includes(value.settings.mode as string) || !['w','b'].includes(value.settings.playerColor as string) || ![0,1,2].includes(value.settings.difficulty as number) ||
+      !object(value.settings) || !['local','ai'].includes(value.settings.mode as string) || !['w','b'].includes(value.settings.playerColor as string) || ![0,1,2,3].includes(value.settings.difficulty as number) ||
       ![null,'w','b'].includes(value.resignedColor as Color | null) || typeof value.startedAt !== 'string' || !/^\d{4}-\d\d-\d\dT/.test(value.startedAt) || !Number.isFinite(Date.parse(value.startedAt))) {
     throw new Error('无效存档');
   }
