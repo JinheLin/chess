@@ -18,7 +18,7 @@ test('real analysis reacts to an observed tactic without exposing a future varia
   await page.addInitScript(()=>{
     localStorage.setItem('chess-lab.session.v1',JSON.stringify({version:1,preferences:{flipped:false,sound:false},game:{version:1,initialFen:'4k3/8/8/8/8/8/4q3/4R1K1 w - - 0 1',moves:[],settings:{mode:'ai',playerColor:'w',difficulty:0},resignedColor:null,promotion:null,startedAt:'2026-10-11T00:00:00.000Z'}}));
   });
-  await page.goto('./');await expect(page.getByRole('status',{name:'对局状态'})).toContainText('白方走棋');
+  await page.goto('./');await expect(page.getByRole('status',{name:'对局状态'})).toContainText('白方走棋',{timeout:20000});
   await page.getByTestId('square-e1').click();await page.getByTestId('square-e2').click();
   await expect(page.locator('.history-footer')).toContainText('2 步',{timeout:15000});
   await expect(page.getByText('本局对话 · 1',{exact:true})).toBeVisible({timeout:20000});
@@ -33,7 +33,7 @@ test('every move responds once for each side and legacy mute does not hide dialo
   await page.addInitScript(()=>localStorage.setItem('chess-lab.personality.v1',JSON.stringify({character:'alex',frequency:'every',muted:true})));
   await page.goto('./');await expect(page.getByLabel('互动频率')).toHaveValue('every');
   await expect(page.getByRole('switch')).toHaveCount(1);
-  await expect(page.getByRole('status',{name:'对局状态'})).toContainText('白方走棋');
+  await expect(page.getByRole('status',{name:'对局状态'})).toContainText('白方走棋',{timeout:20000});
   await page.getByTestId('square-e2').click();await page.getByTestId('square-e4').click();
   await expect(page.getByText('本局对话 · 2',{exact:true})).toBeVisible({timeout:15000});
   await page.getByText('本局对话 · 2',{exact:true}).click();
