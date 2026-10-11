@@ -84,3 +84,4 @@ M3.5 已发布提交 `688e1b6`：[发布记录](https://github.com/JinheLin/ches
 - 本机内置浏览器使用真实 Web Speech API 点击开启后显示「正在朗读」，关闭后恢复关闭状态；未验证扬声器音质或各手机系统的中文声音可用性。
 - 每次刷新需要点击开启；浏览器/系统提供声音，部分声音可能联网，不保证每个设备拥有独立的人物音色。
 - `PLAYWRIGHT_CHANNEL=chrome npm run test:release`：43 项通过，1 项移动鼠标拖拽按设计跳过；桌面与 Pixel 7 模拟全部功能回归通过。
+- 语音版本 `86681de` 已成功发布：[Pages 发布记录](https://github.com/JinheLin/chess/actions/runs/38126593504)。线上桌面/移动语音专项 `tests/e2e/speech.spec.ts` 共 4 项通过（语音接口模拟，验证播放控制，不验证音质）。
