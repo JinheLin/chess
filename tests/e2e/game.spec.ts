@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { closeTools, openTools } from './tools';
 async function move(page: Page, from: string, to: string) {
+  await closeTools(page);
   await page.getByTestId(`square-${from}`).click();
   await page.getByTestId(`square-${to}`).click();
 }
-test.beforeEach(async ({ page }) => { await page.goto('./'); await page.getByRole('button', {name:'对局设置', exact:true}).click(); await page.getByRole('combobox', {name:'对弈模式',exact:true}).selectOption('local'); await page.getByRole('button', {name:'应用并开始新局'}).click(); });
+test.beforeEach(async ({ page }) => { await page.goto('./'); await openTools(page); await page.getByRole('button', {name:'对局设置', exact:true}).click(); await page.getByRole('combobox', {name:'对弈模式',exact:true}).selectOption('local'); await page.getByRole('button', {name:'应用并开始新局'}).click(); await closeTools(page); });
 test('click moves, legal markers, SAN, undo and new game confirmation', async ({ page }) => {
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('白方走棋');
   await page.getByTestId('square-e2').click();
@@ -12,13 +14,16 @@ test('click moves, legal markers, SAN, undo and new game confirmation', async ({
   await page.getByTestId('square-e4').click();
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('黑方走棋');
   await move(page,'e7','e5');
+  await openTools(page);
   await expect(page.getByLabel('走棋记录', {exact:true})).toContainText('e4');
   await expect(page.getByLabel('走棋记录', {exact:true})).toContainText('e5');
   await page.getByRole('button',{name:'悔棋',exact:false}).click(); await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('黑方走棋');
+  await openTools(page);
   await expect(page.getByLabel('走棋记录', {exact:true})).not.toContainText('e5');
   await page.getByRole('button',{name:'开始新局'}).click();
   await page.getByRole('button',{name:'继续对局'}).click();
+  await openTools(page);
   await expect(page.getByLabel('走棋记录', {exact:true})).toContainText('e4');
   await page.getByRole('button',{name:'开始新局'}).click();
   await page.getByRole('button',{name:'确认新局'}).click();
@@ -29,7 +34,7 @@ test('illegal move leaves turn unchanged and flip retains position', async ({pag
   await move(page,'e2','e5');
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('白方走棋');
   await expect(page.getByRole('button',{name:'悔棋'})).toBeDisabled();
-  await page.getByRole('button',{name:'翻转棋盘'}).click();
+  await openTools(page); await page.getByRole('button',{name:'翻转棋盘'}).click();
   const a1 = await page.getByTestId('square-a1').boundingBox();
   const h8 = await page.getByTestId('square-h8').boundingBox();
   expect(a1!.x).toBeGreaterThan(h8!.x);
@@ -41,6 +46,7 @@ test('finish a complete game and undo checkmate', async ({page}) => {
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('黑方获胜 · 将死');
   await expect(page.getByRole('button',{name:'认输',exact:true})).toBeDisabled();
   await move(page,'a2','a3');
+  await openTools(page);
   await expect(page.getByLabel('走棋记录',{exact:true})).not.toContainText('a3');
   await page.getByRole('button',{name:'悔棋',exact:false}).click(); await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('黑方走棋');
@@ -53,6 +59,7 @@ test('promotion dialog cancels safely and allows knight underpromotion', async (
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('白方走棋');
   await move(page,'b7','a8');
   await page.getByRole('button',{name:'升变为马'}).click();
+  await openTools(page);
   await expect(page.getByLabel('走棋记录',{exact:true})).toContainText('bxa8=N');
   await expect(page.getByRole('status', {name:'对局状态'})).toContainText('黑方走棋');
 });
@@ -74,5 +81,6 @@ test('drag and drop moves pieces', async ({ page, isMobile }) => {
   await page.mouse.down();
   await page.mouse.move(to!.x+to!.width/2,to!.y+to!.height/2,{steps:15});
   await page.mouse.up();
+  await openTools(page);
   await expect(page.getByLabel('走棋记录',{exact:true})).toContainText('d4');
 });

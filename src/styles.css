@@ -35,3 +35,46 @@
 .persona-switch:disabled { opacity: .45; cursor: not-allowed; }
 
 .persona-heading .persona-switch { margin-left: auto; min-width: 84px; padding: 8px 10px; }
+.mobile-status,.sheet-flip,.sheet-license,.tools-toggle,.dock-short,.sheet-backdrop{display:none}
+.sheet{display:contents}
+.sheet>.game-panel{order:1;border-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;padding-bottom:4px}
+.action-dock{order:2;margin-top:-18px;background:#fff;border:1px solid #e1e6db;border-top:0;border-radius:0 0 12px 12px;padding:0 22px 22px;display:flex;flex-direction:column;gap:10px}
+.sheet>:not(.game-panel){order:3}
+@media(max-width:720px){
+  html,body,#root{height:100%}
+  body{overflow:hidden;overscroll-behavior:none}
+  .app-shell{max-width:none;width:100%;height:100dvh;margin:0;padding:0;overflow:hidden;display:flex;flex-direction:column}
+  .site-header,.page-heading,.site-footer,.board-caption,.desktop-status,.game-meta,.live-label,.dock-long{display:none}
+  .dock-short,.tools-toggle,.sheet-flip{display:inline-flex}
+  .sheet-license{display:block}
+  .mobile-status{display:flex;align-items:center;gap:8px;flex-shrink:0;margin:0;padding:8px 12px;border:0;border-radius:0;background:#f6f7f2}
+  .mobile-status strong{font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mobile-status .turn-icon{font-size:22px;line-height:1}
+  .mobile-status button{margin-left:auto;border:0;background:transparent;color:#315740;padding:8px 4px;white-space:nowrap}
+  .mobile-status.check,.mobile-status.check strong{background:#fce9e3;color:#8a3d32}
+  main{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .session-notice{margin:0 12px 6px;flex-shrink:0}
+  .game-layout{flex:1;min-height:0;display:flex;flex-direction:column;align-items:stretch;gap:0}
+  .board-column{flex:1;width:100%;min-width:0;min-height:0;display:flex;flex-direction:column;justify-content:center;container-type:size;padding:0 8px calc(68px + env(safe-area-inset-bottom))}
+  .board-slot{flex:none;width:min(100%,calc(100cqh - 84px));aspect-ratio:1;margin-inline:auto;container-type:size;display:grid}
+  .board-slot .board-frame{width:100%;height:100%;max-width:none;border-width:4px;touch-action:none}
+  .player-block{display:flex;align-items:center;gap:6px;padding:2px 4px}
+  .player-block .player{height:34px;flex:1;min-width:0;padding:0}
+  .player-status,.captured-label{display:none}
+  .avatar{width:26px;height:26px;font-size:16px;border-radius:7px}
+  .player strong,.player small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .captured{min-height:0;font-size:16px;justify-content:flex-end}
+  .side-column{display:contents}
+  .sheet{display:flex;flex-direction:column;gap:12px;position:fixed;z-index:25;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));max-height:min(72dvh,640px);overflow:auto;overscroll-behavior:contain;background:#f6f7f2;border-radius:18px 18px 0 0;padding:8px 12px 16px;box-shadow:0 -10px 32px #182b3524;visibility:hidden;pointer-events:none}
+  .sheet::before{content:"";width:36px;height:4px;border-radius:4px;background:#d5ddd4;margin:2px auto 4px;flex:none}
+  .tools-open .sheet{visibility:visible;pointer-events:auto}
+  .sheet>*{flex-shrink:0}
+  .sheet .game-panel{padding:12px;border:0;border-radius:12px;background:#fff;overflow:visible}
+  .sheet-flip{width:100%;justify-content:center;margin-top:8px}
+  .sheet-license{font-size:11px;color:#7c8b72;text-align:center;padding:4px 0 8px}
+  .action-dock{position:fixed;z-index:30;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#fff;border:0;border-top:1px solid #e0e5dc;border-radius:0}
+  .action-dock .controls{display:contents}
+  .action-dock .new-game,.action-dock .tools-toggle,.action-dock .controls button{width:auto;margin:0;min-height:44px;padding:8px 4px;font-size:13px}
+  .sheet-backdrop{display:block;position:fixed;inset:0;z-index:20;border:0;border-radius:0;padding:0;background:#192c2873}
+  .engine-error{margin:0 4px 8px}
+}
