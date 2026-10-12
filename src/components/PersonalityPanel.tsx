@@ -19,7 +19,9 @@ function Panel({engine}:{engine:PersonalityEngine}) {
     const activate = (event:Event)=>{if (!(event.target instanceof Element) || !event.target.closest('[aria-label="语音朗读"]')) speech.activate();};
     document.addEventListener('click',activate);
     document.addEventListener('keydown',activate);
-    return ()=>{document.removeEventListener('click',activate);document.removeEventListener('keydown',activate);speech.dispose();};
+    // Board touch handlers suppress click; activate during the completed gesture before they run.
+    document.addEventListener('touchend',activate,{capture:true,passive:true});
+    return ()=>{document.removeEventListener('click',activate);document.removeEventListener('keydown',activate);document.removeEventListener('touchend',activate,true);speech.dispose();};
   },[speech]);
   const {settings} = state, character = CHARACTERS[settings.character];
   const last = state.history.at(-1);
