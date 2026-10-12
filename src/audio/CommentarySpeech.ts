@@ -25,7 +25,8 @@ export class CommentarySpeech {
   private unsubscribe = ()=>{};
   constructor(private engine:PersonalityEngine,
     private port:SpeechPort | null = typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined' ? speechSynthesis : null,
-    private create:(text:string)=>SpeechSynthesisUtterance = text=>new SpeechSynthesisUtterance(text)) {
+    private create:(text:string)=>SpeechSynthesisUtterance = text=>new SpeechSynthesisUtterance(text),
+    private suspended:()=>boolean = ()=>false) {
     this.state = {enabled:!!port,supported:!!port,error:'',speaking:false};
     this.rememberVoices();
   }
@@ -39,12 +40,13 @@ export class CommentarySpeech {
       const changed = last?.id !== previous.history.at(-1)?.id;
       const invalid = next.settings.muted || !last || next.settings.character !== previous.settings.character;
       previous = next;
+      if (this.suspended()) {this.stop();return;}
       if (invalid) {this.stop();if(next.settings.muted && this.state.enabled) this.publish({enabled:false});return;}
       if (changed && this.state.enabled && this.activated) this.say(last.text,last.character);
     });
   }
   activate() {
-    if (!this.state.enabled || this.activated || !this.port || this.engine.getSnapshot().settings.muted) return;
+    if (this.suspended() || !this.state.enabled || this.activated || !this.port || this.engine.getSnapshot().settings.muted) return;
     this.activated = true;
     const snapshot = this.engine.getSnapshot(), last = snapshot.history.at(-1);
     this.say(last?.text ?? CHARACTERS[snapshot.settings.character].intro,snapshot.settings.character);
@@ -55,6 +57,7 @@ export class CommentarySpeech {
     if (!this.port || snapshot.settings.muted) return;
     this.publish({enabled:true,error:''});
     this.activated = true;
+    if (this.suspended()) return;
     // Called directly from a user gesture, including the first utterance.
     const last = snapshot.history.at(-1);
     this.say(last?.text ?? CHARACTERS[snapshot.settings.character].intro,snapshot.settings.character);

@@ -12,6 +12,7 @@ export interface GameRecord {
   plyCount: number;
   pgn: string;
   timingEstimated?: boolean;
+  playStartedAt?: string;
 }
 
 export function validateGameRecords(value: unknown): GameRecord[] {
@@ -27,6 +28,7 @@ export function validateGameRecords(value: unknown): GameRecord[] {
         !record.settings || !['ai', 'local'].includes(record.settings.mode) || !['w', 'b'].includes(record.settings.playerColor) || ![0, 1, 2, 3].includes(record.settings.difficulty) ||
         !Number.isInteger(record.plyCount) || record.plyCount < 0 || record.plyCount > 10000 ||
         typeof record.pgn !== 'string' || record.pgn.length > 200000 ||
+        (record.playStartedAt !== undefined && (typeof record.playStartedAt !== 'string' || !Number.isFinite(Date.parse(record.playStartedAt)))) ||
         (record.timingEstimated !== undefined && typeof record.timingEstimated !== 'boolean')) throw new Error('无效对弈记录');
     const chess = new Chess();
     chess.loadPgn(record.pgn);

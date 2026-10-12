@@ -12,6 +12,7 @@ import { CapturedPieces } from './components/CapturedPieces';
 import { PersonalityPanel } from './components/PersonalityPanel';
 import { downloadPgn } from './storage/downloadPgn';
 import { GameRecordsDialog } from './components/GameRecordsDialog';
+import { PlayLimitPanel } from './components/PlayLimitPanel';
 
 export default function App() {
   const { controller, preferences, setPreferences, notice, dismissNotice, saveFailed, unlockSound } = useGameSession();
@@ -36,10 +37,10 @@ export default function App() {
   const modeName = isAI ? '人机对弈' : '本地双人';
   const difficultyName = DIFFICULTIES[state.settings.difficulty].label;
   const resigningColor = isAI ? state.settings.playerColor : state.turn;
-  const status = state.result ?? (state.phase === 'ENGINE_ERROR' ? '引擎暂不可用' : state.phase === 'ENGINE_LOADING' ? '正在准备 Stockfish…' : state.phase === 'AI_THINKING' ? 'AI 思考中…' : state.phase === 'PROMOTION_PENDING' ? '请选择升变棋子' : `${colorName(state.turn)}走棋${state.inCheck ? ' · 将军！' : ''}`);
+  const status = state.result ?? (state.phase === 'PLAY_LIMIT' ? '防沉迷 · 请休息' : state.phase === 'ENGINE_ERROR' ? '引擎暂不可用' : state.phase === 'ENGINE_LOADING' ? '正在准备 Stockfish…' : state.phase === 'AI_THINKING' ? 'AI 思考中…' : state.phase === 'PROMOTION_PENDING' ? '请选择升变棋子' : `${colorName(state.turn)}走棋${state.inCheck ? ' · 将军！' : ''}`);
   const toggleSound = () => setPreferences(previous => ({...previous, sound: !previous.sound}));
   const flipBoard = () => { setFlipped(!flipped); clearBoard(); };
-  const requestNewGame = () => { if (state.history.length || state.result) setConfirmation('new'); else { controller.newGame(); clearBoard(); } };
+  const requestNewGame = () => { if (state.history.length || state.result) setConfirmation('new'); else if (controller.newGame()) clearBoard(); };
   const exportGame = () => { try { downloadPgn(controller.exportPgn()); setExportError(false); } catch { setExportError(true); } };
   const player = (color: 'w' | 'b') => <div className="player-block"><div className={`player ${state.turn === color && !state.result ? 'active' : ''}`}>
     <div className={`avatar ${color === 'w' ? 'white' : 'black'}`}>{color === 'w' ? '♔' : '♚'}</div>
@@ -54,6 +55,7 @@ export default function App() {
     <main>
       <div className="page-heading"><div><p className="eyebrow">A LITTLE FOCUS. A GREAT GAME.</p><h1>下一步，皆有可能<span>。</span></h1><p className="subtitle">{isAI ? '与 Stockfish 对弈，让每一步都有新的发现。' : '和身边的朋友，下一盘好棋。'}</p></div><span className="mode-badge">♟ 经典对弈</span></div>
       {notice && <div className="session-notice" role="status" aria-label="恢复提示"><span>{notice}</span><button aria-label="关闭恢复提示" onClick={dismissNotice}>×</button></div>}
+      <PlayLimitPanel controller={controller} limit={state.playLimit} />
       <div className={`mobile-status${state.inCheck ? ' check' : ''}`} role="status" aria-label="对局状态"><span className="turn-icon">{statusIcon}</span><strong>{status}</strong><button aria-label="落子音效" aria-pressed={preferences.sound} onClick={toggleSound}>{soundLabel}</button></div>
       <div className="game-layout">
         <section className="board-column">
@@ -65,7 +67,7 @@ export default function App() {
         </section>
         <aside className="side-column">
           <div className="sheet" id="more-tools" role="region" aria-label="更多功能">
-            <section className="game-panel"><div className="section-title"><h2>当前对局</h2><button className="settings-button" onClick={() => setSettingsOpen(true)}>对局设置</button><span className="live-label">{state.result ? '已结束' : '进行中'}</span></div>
+            <section className="game-panel"><div className="section-title"><h2>当前对局</h2><button className="settings-button" disabled={state.playLimit.reached} onClick={() => setSettingsOpen(true)}>对局设置</button><span className="live-label">{state.result ? '已结束' : '进行中'}</span></div>
               <div className={`turn-card desktop-status${state.inCheck ? ' check' : ''}`} role="status" aria-label="对局状态"><span className="turn-icon">{statusIcon}</span><div><strong>{status}</strong><p>{statusDetail}</p></div></div>
               <div className="game-meta"><div><small>对弈模式</small><strong>{modeName}{isAI ? ` · ${difficultyName}` : ''}</strong></div><div><small>时间限制</small><strong>不限时</strong></div></div>
               <button className="sheet-flip" onClick={flipBoard} aria-label="翻转棋盘">⇅ 翻转棋盘</button>
@@ -79,8 +81,8 @@ export default function App() {
             <a className="sheet-license" href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.txt`} target="_blank" rel="noreferrer">Stockfish 19 · GPLv3</a>
           </div>
           <div className="action-dock">
-            <div className="controls"><button disabled={!state.canUndo} onClick={() => setConfirmation('undo')}>↶ 悔棋</button><button aria-label="认输" disabled={!!state.result || !!state.promotion} onClick={() => setConfirmation('resign')}>⚑ 认输</button></div>
-            <button className="primary new-game" aria-label="开始新局" onClick={requestNewGame}><span className="dock-long">＋ 开始新局</span><span className="dock-short">新局</span></button>
+            <div className="controls"><button disabled={!state.canUndo} onClick={() => setConfirmation('undo')}>↶ 悔棋</button><button aria-label="认输" disabled={!!state.result || !!state.promotion || state.playLimit.blocked} onClick={() => setConfirmation('resign')}>⚑ 认输</button></div>
+            <button className="primary new-game" aria-label="开始新局" disabled={state.playLimit.reached} onClick={requestNewGame}><span className="dock-long">＋ 开始新局</span><span className="dock-short">新局</span></button>
             <button className="tools-toggle" aria-expanded={toolsOpen} aria-controls="more-tools" onClick={() => setToolsOpen(open => !open)}>更多</button>
           </div>
         </aside>
@@ -88,7 +90,7 @@ export default function App() {
     </main>
     {toolsOpen && <button type="button" className="sheet-backdrop" aria-label="关闭更多" onClick={() => setToolsOpen(false)} />}
     <footer className="site-footer"><span>CHESS LAB <b> / </b> 为思考留一点空间</span><span>本地运行 · <a href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.txt`} target="_blank" rel="noreferrer">Stockfish 19 · GPLv3</a></span></footer>
-    {settingsOpen && <GameSettingsDialog settings={state.settings} onClose={() => setSettingsOpen(false)} onStart={settings => { controller.newGame(settings); setFlipped(settings.mode === 'ai' && settings.playerColor === 'b'); clearBoard(); setSettingsOpen(false); }} />}
+    {settingsOpen && <GameSettingsDialog settings={state.settings} onClose={() => setSettingsOpen(false)} onStart={settings => { if (controller.newGame(settings)) { setFlipped(settings.mode === 'ai' && settings.playerColor === 'b'); clearBoard(); } setSettingsOpen(false); }} />}
     {recordsOpen && <GameRecordsDialog records={state.records} onClose={() => setRecordsOpen(false)} />}
     {state.promotion && <Modal title="兵升变" onClose={() => controller.cancelPromotion()}><p>选择一枚棋子，继续你的对局。</p><div className="promotion-options">{([['q','后','♛'],['r','车','♜'],['b','象','♝'],['n','马','♞']] as const).map(([piece,name,glyph]) => <button key={piece} onClick={() => controller.promote(piece as Promotion)} aria-label={`升变为${name}`}><span>{glyph}</span>{name}</button>)}</div><button onClick={() => controller.cancelPromotion()}>取消</button></Modal>}
     {confirmation && <Modal title={confirmation === 'new' ? '开始新的对局？' : confirmation === 'undo' ? '确认悔棋？' : `${colorName(resigningColor)}确认认输？`} onClose={() => setConfirmation(null)}><p>{confirmation === 'new' ? '当前对局将保存到对弈记录，然后开始新局；未结束的对局记为未完成。' : confirmation === 'undo' ? (isAI ? '撤销你最近一步及电脑已有的回应；认输后将先撤销认输。' : '回退最近一步；认输后将先撤销认输。') : '认输后，本局将结束并保存到对弈记录。'}</p><div className="dialog-actions"><button onClick={() => setConfirmation(null)}>继续对局</button><button className="primary" onClick={() => { if (confirmation === 'new') controller.newGame(); else if (confirmation === 'undo') controller.undo(); else controller.resign(); clearBoard(); setConfirmation(null); }}>{confirmation === 'new' ? '确认新局' : confirmation === 'undo' ? '确认悔棋' : '确认认输'}</button></div></Modal>}

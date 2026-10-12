@@ -100,12 +100,12 @@ test('empty new games are omitted, records are newest first, and only 100 are re
   const game = new GameController(); game.newGame(); expect(game.getSnapshot().records).toHaveLength(0);
   let newestId = '';
   for (let i = 0; i <= MAX_GAME_RECORDS; i++) {
-    vi.setSystemTime(Date.parse(start) + i * 1000); game.resign(); newestId = game.save().id; game.newGame();
+    vi.setSystemTime(Date.parse(start) + i * 24 * 60 * 60 * 1000); game.resign(); newestId = game.save().id; game.newGame();
   }
   const records = game.getSnapshot().records;
   expect(records).toHaveLength(MAX_GAME_RECORDS); expect(records[0].id).toBe(newestId);
   expect(new Set(records.map(record => record.id)).size).toBe(MAX_GAME_RECORDS);
-  expect(records.at(-1)?.endedAt).toBe('2026-10-12T01:00:01.000Z');
+  expect(records.at(-1)?.endedAt).toBe('2026-10-13T01:00:00.000Z');
   expect(validateGameRecords(records)).toEqual(records);
 });
 

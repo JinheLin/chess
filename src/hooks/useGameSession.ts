@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { loadSession, saveSession } from '../storage/session';
 import { MoveSound, moveSound } from '../audio/MoveSound';
+import { PLAY_USAGE_KEY } from '../storage/playUsage';
 export function useGameSession() {
   const [initial] = useState(() => loadSession());
   const [preferences, setPreferences] = useState(initial.preferences);
@@ -22,5 +23,13 @@ export function useGameSession() {
     return unsubscribe;
   }, [controller, preferences, audio]);
   useEffect(() => () => audio.dispose(), [audio]);
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => { if (event.key === PLAY_USAGE_KEY) controller.refreshPlayLimit(); };
+    const refresh = () => controller.refreshPlayLimit();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { window.removeEventListener('storage', onStorage); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
+  }, [controller]);
   return {controller, preferences, setPreferences, notice, dismissNotice: () => setNotice(''), saveFailed, unlockSound: () => { if (preferences.sound) audio.unlock(); }};
 }

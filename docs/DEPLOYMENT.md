@@ -47,3 +47,5 @@ PLAYWRIGHT_BASE_URL=https://jinhelin.github.io/chess/ npm run test:release
 优先 revert 有问题的提交并推送，然后对该分支再次手动运行 Publish GitHub Pages。也可在目标历史提交创建发布分支后手动运行该分支工作流；工作流会重新验证并部署完整产物。不要只替换 WASM 或 JS 中的单个文件。
 
 localStorage 存档按站点 origin 隔离：localhost 与 Pages 不共享。保存当前棋局及最近 100 局记录，存档 version 1；旧版没有 records、id 或 endedAt 的存档仍可恢复。升级必须保持兼容或提示降级，不应依赖上线时清空用户数据。
+
+防沉迷计数另存于 chess-lab.play-usage.v1；刷新或棋局存档损坏时仍保留，旧记录可补计。验收时确认第三局结束后新局禁用、休息提示及语音提醒出现，四小时边界与本地午夜能正确更新；不能通过清空生产站点的用户存档来升级。
