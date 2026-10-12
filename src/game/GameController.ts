@@ -7,6 +7,8 @@ import { DIFFICULTIES } from '../engine/ChessEngine';
 import type { ChessEngine } from '../engine/ChessEngine';
 import { validateSavedGame } from './SavedGame';
 import type { SavedGame } from './SavedGame';
+import { MAX_GAME_RECORDS } from './GameRecord';
+import type { GameRecord } from './GameRecord';
 
 export class GameController {
   private chess: Chess;
@@ -14,6 +16,10 @@ export class GameController {
   private promotion: GameState['promotion'] = null;
   private resignation: Color | null = null;
   private startedAt = new Date().toISOString();
+  private id: string = crypto.randomUUID();
+  private endedAt: string | null = null;
+  private timingEstimated = false;
+  private records: GameRecord[] = [];
   private listeners = new Set<() => void>();
   private state: GameState;
   private settings: GameSettings;
@@ -28,9 +34,10 @@ export class GameController {
     this.chess = new Chess(fen);
     this.initialFen = this.chess.fen();
     this.settings = { ...settings };
+    this.syncRecord();
     this.state = this.snapshot();
   }
-  static restore(value: unknown): GameController {
+  static restore(value: unknown, records: readonly GameRecord[] = []): GameController {
     const saved = validateSavedGame(value);
     const game = new GameController(saved.initialFen, saved.settings);
     for (const uci of saved.moves) {
@@ -45,6 +52,12 @@ export class GameController {
     game.promotion = saved.promotion;
     game.resignation = saved.resignedColor;
     game.startedAt = saved.startedAt;
+    game.id = saved.id;
+    game.endedAt = saved.endedAt;
+    game.timingEstimated = saved.timingEstimated ?? (!!game.gameResult() && !saved.endedAt);
+    if (game.endedAt && !game.gameResult()) throw new Error('未结束对局含结束时间');
+    game.records = structuredClone(records) as GameRecord[];
+    game.syncRecord();
     game.state = game.snapshot();
     return game;
   }
@@ -54,6 +67,8 @@ export class GameController {
       moves: this.chess.history({ verbose: true }).map(move => `${move.from}${move.to}${move.promotion ?? ''}`),
       settings: { ...this.settings }, resignedColor: this.resignation,
       promotion: this.promotion ? { ...this.promotion } : null, startedAt: this.startedAt,
+      id: this.id, endedAt: this.endedAt,
+      ...(this.timingEstimated ? { timingEstimated: true } : {}),
     };
   }
   exportPgn(): string {
@@ -63,7 +78,11 @@ export class GameController {
     const loser = this.resignation ?? (this.chess.isCheckmate() ? this.chess.turn() : null);
     const result = loser ? loser === 'w' ? '0-1' : '1-0' : resultOf(this.chess) ? '1/2-1/2' : '*';
     const player = (color: Color) => this.settings.mode === 'local' ? `Local ${color === 'w' ? 'White' : 'Black'}` : color === this.settings.playerColor ? 'Human' : `Stockfish 19 (Skill ${DIFFICULTIES[this.settings.difficulty].skill}${this.settings.difficulty === 3 ? ', Beginner policy' : ''})`;
-    for (const [key, value] of Object.entries({ Event: 'Chess Lab', Site: 'Local', Date: this.startedAt.slice(0, 10).replaceAll('-', '.'), Round: '-', White: player('w'), Black: player('b'), Result: result })) copy.setHeader(key, value);
+    const start = new Date(this.startedAt).toISOString();
+    const headers: Record<string, string> = { Event: 'Chess Lab', Site: 'Local', Date: start.slice(0, 10).replaceAll('-', '.'), Round: '-', White: player('w'), Black: player('b'), Result: result, UTCDate: start.slice(0, 10).replaceAll('-', '.'), UTCTime: start.slice(11, 19), StartTime: start };
+    if (this.endedAt) { headers.EndTime = this.endedAt; headers.Duration = `${Math.floor((Date.parse(this.endedAt) - Date.parse(this.startedAt)) / 1000)}s`; }
+    if (this.timingEstimated) headers.TimeComment = 'End time estimated at first restore';
+    for (const [key, value] of Object.entries(headers)) copy.setHeader(key, value);
     return copy.pgn({ maxWidth: 80 }) + '\n';
   }
   getSnapshot = () => this.state;
@@ -71,8 +90,31 @@ export class GameController {
     this.listeners.add(listener);
     return () => { this.listeners.delete(listener); };
   };
+  private gameResult() {
+    return this.resignation ? `${colorName(this.resignation === 'w' ? 'b' : 'w')}获胜 · ${colorName(this.resignation)}认输` : resultOf(this.chess);
+  }
+  private archive(result: string) {
+    this.endedAt ??= new Date(Math.max(Date.now(), Date.parse(this.startedAt))).toISOString();
+    const record: GameRecord = {
+      id: this.id, startedAt: this.startedAt, endedAt: this.endedAt,
+      durationMs: Date.parse(this.endedAt) - Date.parse(this.startedAt), result,
+      settings: { ...this.settings }, plyCount: this.chess.history().length, pgn: this.exportPgn(),
+      ...(this.timingEstimated ? { timingEstimated: true } : {}),
+    };
+    this.records = [record, ...this.records.filter(record => record.id !== this.id)].slice(0, MAX_GAME_RECORDS);
+  }
+  private syncRecord() {
+    const result = this.gameResult();
+    if (result) {
+      this.archive(result);
+    } else {
+      this.endedAt = null;
+      this.timingEstimated = false;
+      if (this.records.some(record => record.id === this.id)) this.records = this.records.filter(record => record.id !== this.id);
+    }
+  }
   private snapshot(): GameState {
-    const result = this.resignation ? `${colorName(this.resignation === 'w' ? 'b' : 'w')}获胜 · ${colorName(this.resignation)}认输` : resultOf(this.chess);
+    const result = this.gameResult();
     const history = this.chess.history({ verbose: true });
     const king = this.chess.board().flat().find(p => p?.type === 'k' && p.color === this.chess.turn());
     const aiTurn = this.settings.mode === 'ai' && this.chess.turn() !== this.settings.playerColor;
@@ -84,9 +126,11 @@ export class GameController {
       checkedKing: this.chess.isCheck() ? king?.square : undefined,
       promotion: this.promotion, settings: { ...this.settings }, engineError: this.engineError,
       canUndo: !!this.promotion || !!this.resignation || (this.settings.mode === 'local' ? history.length > 0 : history.some(move => move.color === this.settings.playerColor)),
+      records: this.records,
     };
   }
   private publish() {
+    this.syncRecord();
     this.state = this.snapshot();
     this.listeners.forEach(listener => listener());
   }
@@ -187,10 +231,14 @@ export class GameController {
     this.resume();
   }
   newGame(settings: GameSettings = this.settings) {
+    if (!this.gameResult() && this.chess.history().length) this.archive('未完成 · 开始新局');
     this.disconnectEngine();
     this.settings = { ...settings };
     this.chess.reset();
     this.startedAt = new Date().toISOString();
+    this.id = crypto.randomUUID();
+    this.endedAt = null;
+    this.timingEstimated = false;
     this.initialFen = this.chess.fen();
     this.promotion = null;
     this.resignation = null;

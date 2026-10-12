@@ -11,11 +11,13 @@ import { useGameSession } from './hooks/useGameSession';
 import { CapturedPieces } from './components/CapturedPieces';
 import { PersonalityPanel } from './components/PersonalityPanel';
 import { downloadPgn } from './storage/downloadPgn';
+import { GameRecordsDialog } from './components/GameRecordsDialog';
 
 export default function App() {
   const { controller, preferences, setPreferences, notice, dismissNotice, saveFailed, unlockSound } = useGameSession();
   useEffect(() => { controller.connectEngine(() => new StockfishEngine()); return () => controller.disconnectEngine(); }, [controller]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [recordsOpen, setRecordsOpen] = useState(false);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const flipped = preferences.flipped;
   const setFlipped = (value: boolean) => setPreferences(previous => ({...previous, flipped:value}));
@@ -71,6 +73,7 @@ export default function App() {
             {isAI && <PersonalityPanel controller={controller} />}
             <MoveHistory history={state.history} />
             <div className="save-tools"><span role="status" aria-label="保存状态">{saveFailed ? '无法自动保存，请导出棋谱备份' : '已自动保存 · 仅此浏览器'}</span><button onClick={exportGame}>导出 PGN</button></div>
+            <button className="records-button" onClick={() => setRecordsOpen(true)}>对弈记录 <span>{state.records.length} 局</span></button>
             {exportError && <p className="engine-error" role="alert">下载未成功，请检查浏览器下载设置后重试。</p>}
             <div className="tip"><span>✧</span><p><strong>落子之前，多看一步</strong><br/>点击己方棋子，即可查看所有合法落点。</p></div>
             <a className="sheet-license" href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.txt`} target="_blank" rel="noreferrer">Stockfish 19 · GPLv3</a>
@@ -86,7 +89,8 @@ export default function App() {
     {toolsOpen && <button type="button" className="sheet-backdrop" aria-label="关闭更多" onClick={() => setToolsOpen(false)} />}
     <footer className="site-footer"><span>CHESS LAB <b> / </b> 为思考留一点空间</span><span>本地运行 · <a href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.txt`} target="_blank" rel="noreferrer">Stockfish 19 · GPLv3</a></span></footer>
     {settingsOpen && <GameSettingsDialog settings={state.settings} onClose={() => setSettingsOpen(false)} onStart={settings => { controller.newGame(settings); setFlipped(settings.mode === 'ai' && settings.playerColor === 'b'); clearBoard(); setSettingsOpen(false); }} />}
+    {recordsOpen && <GameRecordsDialog records={state.records} onClose={() => setRecordsOpen(false)} />}
     {state.promotion && <Modal title="兵升变" onClose={() => controller.cancelPromotion()}><p>选择一枚棋子，继续你的对局。</p><div className="promotion-options">{([['q','后','♛'],['r','车','♜'],['b','象','♝'],['n','马','♞']] as const).map(([piece,name,glyph]) => <button key={piece} onClick={() => controller.promote(piece as Promotion)} aria-label={`升变为${name}`}><span>{glyph}</span>{name}</button>)}</div><button onClick={() => controller.cancelPromotion()}>取消</button></Modal>}
-    {confirmation && <Modal title={confirmation === 'new' ? '开始新的对局？' : confirmation === 'undo' ? '确认悔棋？' : `${colorName(resigningColor)}确认认输？`} onClose={() => setConfirmation(null)}><p>{confirmation === 'new' ? '当前对局及走棋记录将被清空。' : confirmation === 'undo' ? (isAI ? '撤销你最近一步及电脑已有的回应；认输后将先撤销认输。' : '回退最近一步；认输后将先撤销认输。') : '认输后，本局将结束。'}</p><div className="dialog-actions"><button onClick={() => setConfirmation(null)}>继续对局</button><button className="primary" onClick={() => { if (confirmation === 'new') controller.newGame(); else if (confirmation === 'undo') controller.undo(); else controller.resign(); clearBoard(); setConfirmation(null); }}>{confirmation === 'new' ? '确认新局' : confirmation === 'undo' ? '确认悔棋' : '确认认输'}</button></div></Modal>}
+    {confirmation && <Modal title={confirmation === 'new' ? '开始新的对局？' : confirmation === 'undo' ? '确认悔棋？' : `${colorName(resigningColor)}确认认输？`} onClose={() => setConfirmation(null)}><p>{confirmation === 'new' ? '当前对局将保存到对弈记录，然后开始新局；未结束的对局记为未完成。' : confirmation === 'undo' ? (isAI ? '撤销你最近一步及电脑已有的回应；认输后将先撤销认输。' : '回退最近一步；认输后将先撤销认输。') : '认输后，本局将结束并保存到对弈记录。'}</p><div className="dialog-actions"><button onClick={() => setConfirmation(null)}>继续对局</button><button className="primary" onClick={() => { if (confirmation === 'new') controller.newGame(); else if (confirmation === 'undo') controller.undo(); else controller.resign(); clearBoard(); setConfirmation(null); }}>{confirmation === 'new' ? '确认新局' : confirmation === 'undo' ? '确认悔棋' : '确认认输'}</button></div></Modal>}
   </div>;
 }

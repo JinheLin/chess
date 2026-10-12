@@ -44,6 +44,7 @@ test('new game invalidates stale results even if an engine ignores abort', async
   const {game,engines} = setup(); await flush(); game.move('e2','e4'); await flush(); const old = engines[0].requests[0];
   game.newGame(); await flush(); old.resolve('e7e5'); await flush();
   expect(engines[0].disposed).toBe(true); expect(game.getSnapshot().history).toHaveLength(0); game.disconnectEngine();
+  expect(game.getSnapshot().records).toHaveLength(1); expect(game.getSnapshot().records[0].plyCount).toBe(1);
 });
 test('side and difficulty change restart safely and configure new engine', async () => {
   const {game,engines,settings} = setup(); await flush(); game.move('e2','e4'); await flush();
@@ -71,6 +72,7 @@ test('unmount and reconnect isolate old callbacks', async () => {
 test('resigning during search awards win to AI and blocks late results', async () => {
   const {game,engines} = setup('b'); await flush(); game.resign(); engines[0].requests[0].resolve('e2e4'); await flush();
   expect(game.getSnapshot().result).toBe('白方获胜 · 黑方认输'); expect(game.getSnapshot().history).toHaveLength(0); game.disconnectEngine();
+  expect(game.getSnapshot().records).toHaveLength(1); expect(game.getSnapshot().records[0].result).toBe('白方获胜 · 黑方认输');
 });
 test('AI promotion and checkmate are validated by rules', async () => {
   const {game,engines} = setup('b','7k/P7/8/8/8/8/8/7K w - - 0 1'); await flush();
@@ -84,6 +86,7 @@ test('AI mating move ends game and freezes the board', async () => {
   const {game,engines} = setup('b','7k/5Q2/6K1/8/8/8/8/8 w - - 0 1'); await flush();
   engines[0].requests[0].resolve('f7g7'); await flush();
   expect(game.getSnapshot().result).toBe('白方获胜 · 将死'); expect(game.move('h8','h7')).toBe(false); game.disconnectEngine();
+  expect(game.getSnapshot().records).toHaveLength(1); expect(game.getSnapshot().records[0].pgn).toContain('Qg7#');
 });
 test('disconnect during initialization prevents late setup from starting a search', async () => {
   const engine = new FakeEngine(); let finish!: () => void;

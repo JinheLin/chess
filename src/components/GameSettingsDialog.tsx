@@ -7,7 +7,7 @@ export function GameSettingsDialog({ settings, onClose, onStart }: {
 }) {
   const [draft, setDraft] = useState(settings);
   return <Modal title="对局设置" onClose={onClose}>
-    <p>应用设置将开始新局，并清空当前棋谱。</p>
+    <p>应用设置将保存当前对局并开始新局；未结束的对局记为未完成。</p>
     <div className="settings-fields">
       <label>对弈模式<select value={draft.mode} onChange={event => setDraft({ ...draft, mode: event.target.value as GameSettings['mode'] })}>
         <option value="ai">人机对弈</option><option value="local">本地双人</option>

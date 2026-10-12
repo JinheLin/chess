@@ -8,6 +8,9 @@ export interface SavedGame {
   resignedColor: Color | null;
   promotion: { from: Square; to: Square } | null;
   startedAt: string;
+  id: string;
+  endedAt: string | null;
+  timingEstimated?: boolean;
 }
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 export function validateSavedGame(value: unknown): SavedGame {
@@ -18,5 +21,9 @@ export function validateSavedGame(value: unknown): SavedGame {
     throw new Error('无效存档');
   }
   if (value.promotion !== null && (!object(value.promotion) || (typeof value.promotion.from !== 'string' || !/^[a-h][1-8]$/.test(value.promotion.from)) || (typeof value.promotion.to !== 'string' || !/^[a-h][1-8]$/.test(value.promotion.to)))) throw new Error('无效升变存档');
-  return structuredClone(value) as unknown as SavedGame;
+  // Version 1 sessions predating the record list have neither field.
+  if (value.id !== undefined && (typeof value.id !== 'string' || !value.id || value.id.length > 100)) throw new Error('无效对局编号');
+  if (value.endedAt !== undefined && value.endedAt !== null && (typeof value.endedAt !== 'string' || !Number.isFinite(Date.parse(value.endedAt)) || Date.parse(value.endedAt) < Date.parse(value.startedAt))) throw new Error('无效结束时间');
+  if (value.timingEstimated !== undefined && typeof value.timingEstimated !== 'boolean') throw new Error('无效计时状态');
+  return { ...structuredClone(value), id: value.id ?? crypto.randomUUID(), endedAt: value.endedAt ?? null } as unknown as SavedGame;
 }
