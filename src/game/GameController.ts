@@ -220,7 +220,7 @@ export class GameController {
         this.publish();
         if (this.chess.turn() === this.settings.playerColor) return;
         let uci = await engine.getBestMove(this.chess.fen(), {
-          movetimeMs: difficulty.movetimeMs, maxDepth:this.settings.difficulty === 3 ? 3 : undefined, signal: abort.signal, initialFen: this.initialFen,
+          movetimeMs: difficulty.movetimeMs, maxDepth:this.settings.difficulty === 3 ? 4 : undefined, signal: abort.signal, initialFen: this.initialFen,
           moves: this.chess.history({ verbose: true }).map(move => `${move.from}${move.to}${move.promotion ?? ''}`),
         });
         if (revision !== this.revision || abort.signal.aborted) return;
