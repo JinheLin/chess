@@ -20,6 +20,35 @@ test('session roundtrip preserves FEN, SAN, settings, orientation and sound', ()
   expect(restored.controller.getSnapshot().settings).toEqual(game.getSnapshot().settings);
   restored.controller.undo(); expect(restored.controller.getSnapshot().history).toHaveLength(2);
 });
+test('legacy quota data preserves the game and records without blocking further play', () => {
+  const game = new GameController(); play(game,['e2e4']); game.resign(); game.newGame(); play(game,['d2d4']);
+  const storage = new MemoryStorage(); saveSession(game,{flipped:true,sound:false},()=>storage);
+  const data = JSON.parse(storage.getItem(SESSION_KEY)!);
+  data.game.playStartedAt = data.game.startedAt;
+  data.records = game.getSnapshot().records.map(record=>({...record,playStartedAt:record.startedAt}));
+  storage.setItem(SESSION_KEY,JSON.stringify(data));
+  const usageKey = 'chess-lab.play-usage.v1';
+  const usage = JSON.stringify({version:1,usage:Array.from({length:9},(_,i)=>({id:`old-${i}`,startedAt:new Date().toISOString()}))});
+  storage.setItem(usageKey,usage);
+  const session = loadSession(()=>storage), restored = session.controller;
+  expect(session.notice).toContain('已恢复'); expect(session.preferences).toEqual({flipped:true,sound:false});
+  expect(restored.getSnapshot().fen).toBe(game.getSnapshot().fen);
+  expect(restored.getSnapshot().records).toEqual(data.records);
+  restored.undo(); expect(restored.getSnapshot().history).toHaveLength(0);
+  for (let i=0;i<10;i++) {
+    restored.newGame(); expect(restored.getSnapshot().phase).toBe('PLAYER_TURN');
+    expect(restored.move('e2','e4')).toBe(true); restored.resign();
+    expect(restored.getSnapshot().result).toContain('认输');
+  }
+  restored.undo(); expect(restored.getSnapshot().result).toBeNull();
+  restored.newGame({mode:'ai',playerColor:'b',difficulty:3});
+  expect(restored.getSnapshot().settings).toEqual({mode:'ai',playerColor:'b',difficulty:3});
+  expect(saveSession(restored,session.preferences,()=>storage)).toBe(true);
+  const again = loadSession(()=>storage).controller;
+  expect(again.getSnapshot().records).toEqual(restored.getSnapshot().records);
+  expect(again.getSnapshot().settings).toEqual(restored.getSnapshot().settings);
+  expect(storage.getItem(usageKey)).toBe(usage);
+});
 test('full replay preserves repetition before and after automatic draw', () => {
   const game = new GameController(); play(game,['g1f3','g8f6','f3g1','f6g8','g1f3','g8f6','f3g1']);
   const restored = GameController.restore(game.save()); play(restored,['f6g8']);

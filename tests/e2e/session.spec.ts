@@ -66,3 +66,28 @@ test('corrupt storage and blocked storage show feedback without breaking play', 
   await local(page); await openTools(page); await expect(page.getByRole('status',{name:'保存状态'})).toContainText('无法自动保存'); await closeTools(page);
   await move(page,'e2','e4'); await expect(status(page)).toContainText('黑方走棋');
 });
+test('legacy full quotas allow play, terminal undo, new games and AI settings after reload', async ({page}) => {
+  await page.addInitScript(initialFen=>{
+    if (localStorage.getItem('chess-lab.session.v1')) return;
+    const startedAt = new Date().toISOString();
+    localStorage.setItem('chess-lab.play-usage.v1',JSON.stringify({version:1,usage:Array.from({length:9},(_,i)=>({id:`old-${i}`,startedAt}))}));
+    localStorage.setItem('chess-lab.session.v1',JSON.stringify({version:1,preferences:{flipped:false,sound:false},records:[],game:{version:1,initialFen,moves:['e2e4'],settings:{mode:'local',playerColor:'w',difficulty:0},resignedColor:null,promotion:null,startedAt,playStartedAt:startedAt}}));
+  },new Chess().fen());
+  await page.goto('./'); await expect(status(page)).toContainText('黑方走棋');
+  await expect(page.getByRole('alert',{name:'防沉迷提示'})).toHaveCount(0);
+  await expect(page.getByRole('status',{name:'防沉迷用量'})).toHaveCount(0);
+  await move(page,'e7','e5');
+  await page.getByRole('button',{name:'认输',exact:true}).click(); await page.getByRole('button',{name:'确认认输'}).click();
+  await page.reload(); await expect(status(page)).toContainText('黑方获胜 · 白方认输');
+  await page.getByRole('button',{name:'悔棋'}).click(); await page.getByRole('button',{name:'确认悔棋',exact:true}).click();
+  await expect(status(page)).toContainText('白方走棋'); await move(page,'g1','f3');
+  await page.getByRole('button',{name:'开始新局'}).click(); await page.getByRole('button',{name:'确认新局'}).click();
+  await expect(status(page)).toContainText('白方走棋'); await openTools(page);
+  await page.getByRole('button',{name:'对局设置',exact:true}).click();
+  await page.getByRole('combobox',{name:'对弈模式',exact:true}).selectOption('ai');
+  await page.getByLabel('我的执棋').selectOption('b'); await page.getByLabel('AI 难度').selectOption({label:'入门'});
+  await page.getByRole('button',{name:'应用并开始新局'}).click(); await closeTools(page);
+  await expect(status(page)).toContainText('黑方走棋',{timeout:20000});
+  await page.reload(); await expect(status(page)).toContainText('黑方走棋',{timeout:20000});
+  await openTools(page); await expect(page.locator('.history-footer')).toContainText('1 步');
+});

@@ -48,4 +48,4 @@ PLAYWRIGHT_BASE_URL=https://jinhelin.github.io/chess/ npm run test:release
 
 localStorage 存档按站点 origin 隔离：localhost 与 Pages 不共享。保存当前棋局及最近 100 局记录，存档 version 1；旧版没有 records、id 或 endedAt 的存档仍可恢复。升级必须保持兼容或提示降级，不应依赖上线时清空用户数据。
 
-防沉迷计数另存于 chess-lab.play-usage.v1；刷新或棋局存档损坏时仍保留，旧记录可补计。验收时确认第三局结束后新局禁用、休息提示及语音提醒出现，四小时边界与本地午夜能正确更新；不能通过清空生产站点的用户存档来升级。
+防沉迷限制已关闭；旧版 chess-lab.play-usage.v1 计数不再读取或更新。验收时保留旧计数与存档，确认仍可走棋、悔棋、开始新局和切换对局设置，刷新后可恢复棋局与记录。

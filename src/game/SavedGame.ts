@@ -11,7 +11,6 @@ export interface SavedGame {
   id: string;
   endedAt: string | null;
   timingEstimated?: boolean;
-  playStartedAt?: string | null;
 }
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 export function validateSavedGame(value: unknown): SavedGame {
@@ -26,6 +25,5 @@ export function validateSavedGame(value: unknown): SavedGame {
   if (value.id !== undefined && (typeof value.id !== 'string' || !value.id || value.id.length > 100)) throw new Error('无效对局编号');
   if (value.endedAt !== undefined && value.endedAt !== null && (typeof value.endedAt !== 'string' || !Number.isFinite(Date.parse(value.endedAt)) || Date.parse(value.endedAt) < Date.parse(value.startedAt))) throw new Error('无效结束时间');
   if (value.timingEstimated !== undefined && typeof value.timingEstimated !== 'boolean') throw new Error('无效计时状态');
-  if (value.playStartedAt !== undefined && value.playStartedAt !== null && (typeof value.playStartedAt !== 'string' || !Number.isFinite(Date.parse(value.playStartedAt)))) throw new Error('无效开局计数时间');
   return { ...structuredClone(value), id: value.id ?? crypto.randomUUID(), endedAt: value.endedAt ?? null } as unknown as SavedGame;
 }

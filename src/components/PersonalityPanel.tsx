@@ -8,11 +8,11 @@ import { PersonalityEngine } from '../personality/PersonalityEngine';
 export function PersonalityPanel({controller}:{controller:GameController}) {
   const [engine] = useState(()=>new PersonalityEngine(controller));
   useEffect(()=>{engine.connect();return ()=>engine.dispose();},[engine]);
-  return <Panel engine={engine} controller={controller} />;
+  return <Panel engine={engine} />;
 }
-function Panel({engine,controller}:{engine:PersonalityEngine;controller:GameController}) {
+function Panel({engine}:{engine:PersonalityEngine}) {
   const state = useSyncExternalStore(engine.subscribe,engine.getSnapshot);
-  const [speech] = useState(()=>new CommentarySpeech(engine,undefined,undefined,()=>controller.getSnapshot().playLimit.blocked));
+  const [speech] = useState(()=>new CommentarySpeech(engine));
   const voice = useSyncExternalStore(speech.subscribe,speech.getSnapshot);
   useEffect(()=>{
     speech.connect();
