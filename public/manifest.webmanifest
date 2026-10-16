@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Chess Lab · 国际象棋",
+  "short_name": "Chess Lab",
+  "description": "与朋友或 Stockfish 对弈，支持离线使用。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f2",
+  "theme_color": "#182c25",
+  "icons": [
+    { "src": "icons/chess-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/chess-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -15,4 +15,19 @@ assert((await readFile('dist/THIRD_PARTY_NOTICES.txt','utf8')).includes('54fde71
 const html = await readFile('dist/index.html','utf8');
 for (const [,path] of html.matchAll(/(?:src|href)="(\.\/assets\/[^" ]+)"/g)) assert((await stat('dist/' + path)).isFile());
 assert(html.includes('./assets/'),'Expected relative asset URLs');
+assert(html.includes('rel="manifest"') && html.includes('./manifest.webmanifest'), 'Missing home screen manifest');
+assert(html.includes('rel="preload"') && html.includes('./engine/stockfish-19-lite-single.wasm'), 'Missing early engine download');
+const manifest = JSON.parse(await readFile('dist/manifest.webmanifest', 'utf8'));
+assert.equal(manifest.start_url, './');
+assert.equal(manifest.scope, './');
+assert.equal(manifest.display, 'standalone');
+for (const icon of manifest.icons) {
+  const bytes = await readFile('dist/' + icon.src);
+  assert.equal(bytes.readUInt32BE(16), Number(icon.sizes.split('x')[0]));
+  assert.equal(bytes.readUInt32BE(20), Number(icon.sizes.split('x')[1]));
+}
+const worker = await readFile('dist/sw.js', 'utf8');
+for (const resource of ['index.html', 'manifest.webmanifest', 'engine/stockfish-19-lite-single.js', 'engine/stockfish-19-lite-single.wasm', 'engine/COPYING.txt', 'THIRD_PARTY_NOTICES.txt']) {
+  assert(worker.includes(JSON.stringify(resource)), 'Missing offline resource: ' + resource);
+}
 process.stdout.write('Production assets, WASM, licenses and relative paths verified.\n');

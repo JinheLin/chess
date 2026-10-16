@@ -12,6 +12,7 @@ import { CapturedPieces } from './components/CapturedPieces';
 import { PersonalityPanel } from './components/PersonalityPanel';
 import { downloadPgn } from './storage/downloadPgn';
 import { GameRecordsDialog } from './components/GameRecordsDialog';
+import { WebAppStatus } from './components/WebAppStatus';
 
 export default function App() {
   const { controller, preferences, setPreferences, notice, dismissNotice, saveFailed, unlockSound } = useGameSession();
@@ -70,6 +71,7 @@ export default function App() {
               <div className="game-meta"><div><small>对弈模式</small><strong>{modeName}{isAI ? ` · ${difficultyName}` : ''}</strong></div><div><small>时间限制</small><strong>不限时</strong></div></div>
               <button className="sheet-flip" onClick={flipBoard} aria-label="翻转棋盘">⇅ 翻转棋盘</button>
             </section>
+            <WebAppStatus controller={controller} />
             {isAI && <PersonalityPanel controller={controller} />}
             <MoveHistory history={state.history} />
             <div className="save-tools"><span role="status" aria-label="保存状态">{saveFailed ? '无法自动保存，请导出棋谱备份' : '已自动保存 · 仅此浏览器'}</span><button onClick={exportGame}>导出 PGN</button></div>
