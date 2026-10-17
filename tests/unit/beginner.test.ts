@@ -4,7 +4,9 @@ import {GameController} from '../../src/game/GameController';
 import type {SearchOptions} from '../../src/engine/ChessEngine';
 test('beginner policy sometimes misses the recommendation but can only select a legal move',()=>{
   expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>0)).toBe('a2a3');
-  expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.299)).toBe('a2a3');
+  expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.199)).toBe('a2a3');
+  expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.2)).toBe('e2e4');
+  expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.299)).toBe('e2e4');
   expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.3)).toBe('e2e4');
   expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.39)).toBe('e2e4');
   expect(beginnerMove('e2e4',['e2e4','a2a3'],()=>.8)).toBe('e2e4');
