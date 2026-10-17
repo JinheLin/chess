@@ -1,6 +1,6 @@
 import type { Color, Square } from 'chess.js';
 import type { GameSettings } from './GameState';
-import { validateBeginnerRandomPercent } from '../engine/BeginnerPolicy';
+import { validateBeginnerSettings } from '../engine/BeginnerPolicy';
 export interface SavedGame {
   version: 1;
   initialFen: string;
@@ -22,7 +22,7 @@ export function validateSavedGame(value: unknown): SavedGame {
     throw new Error('无效存档');
   }
   if (value.promotion !== null && (!object(value.promotion) || (typeof value.promotion.from !== 'string' || !/^[a-h][1-8]$/.test(value.promotion.from)) || (typeof value.promotion.to !== 'string' || !/^[a-h][1-8]$/.test(value.promotion.to)))) throw new Error('无效升变存档');
-  validateBeginnerRandomPercent(value.settings.beginnerRandomPercent);
+  validateBeginnerSettings(value.settings);
   // Version 1 sessions predating the record list have neither field.
   if (value.id !== undefined && (typeof value.id !== 'string' || !value.id || value.id.length > 100)) throw new Error('无效对局编号');
   if (value.endedAt !== undefined && value.endedAt !== null && (typeof value.endedAt !== 'string' || !Number.isFinite(Date.parse(value.endedAt)) || Date.parse(value.endedAt) < Date.parse(value.startedAt))) throw new Error('无效结束时间');

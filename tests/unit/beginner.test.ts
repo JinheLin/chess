@@ -23,11 +23,23 @@ test.each([
 });
 test.each([[3,10,true],[3,30,false],[3,100,false],[0,100,true]] as const)('controller applies probability %i/%i only to entry games',async(difficulty,beginnerRandomPercent,recommended)=>{
   vi.spyOn(Math,'random').mockReturnValue(.25);
-  const game=new GameController(undefined,{mode:'ai',playerColor:'b',difficulty,beginnerRandomPercent});
-  game.connectEngine(()=>({initialize:async()=>{},setDifficulty:async()=>{},getBestMove:async()=> 'e2e4',dispose:()=>{}}));
+  const game=new GameController(undefined,{mode:'ai',playerColor:'b',difficulty,beginnerRandomPercent,beginnerMaxDepth:10,beginnerMovetimeMs:2000});
+  let options:SearchOptions|undefined;
+  game.connectEngine(()=>({initialize:async()=>{},setDifficulty:async()=>{},getBestMove:async(_fen,o)=>{options=o;return 'e2e4';},dispose:()=>{}}));
   for(let i=0;i<20;i++) await Promise.resolve();
   expect(game.getSnapshot().history).toHaveLength(1);
   expect(game.getSnapshot().history[0].lan==='e2e4').toBe(recommended);
+  expect(options).toMatchObject(difficulty===3?{movetimeMs:2000,maxDepth:10}:{movetimeMs:300,maxDepth:undefined});
+  game.disconnectEngine();
+});
+test.each([[1,50],[6,800],[10,2000]])('restored entry search uses depth %i and time %i',async(beginnerMaxDepth,beginnerMovetimeMs)=>{
+  const original=new GameController(undefined,{mode:'ai',playerColor:'b',difficulty:3,beginnerMaxDepth,beginnerMovetimeMs});
+  const game=GameController.restore(original.save());
+  let options:SearchOptions|undefined;
+  game.connectEngine(()=>({initialize:async()=>{},setDifficulty:async()=>{},getBestMove:async(_fen,o)=>{options=o;return 'e2e4';},dispose:()=>{}}));
+  for(let i=0;i<20;i++) await Promise.resolve();
+  expect(options).toMatchObject({movetimeMs:beginnerMovetimeMs,maxDepth:beginnerMaxDepth});
+  expect(game.getSnapshot().history).toHaveLength(1);
   game.disconnectEngine();
 });
 test('new difficulty survives saves, limits playing search, and exports its distinct identity',async()=>{
@@ -40,18 +52,38 @@ test('new difficulty survives saves, limits playing search, and exports its dist
   expect(GameController.restore(game.save()).getSnapshot().settings.difficulty).toBe(3);
   expect(game.exportPgn()).toContain('Beginner policy');game.disconnectEngine();
   expect(GameController.restore(game.save()).exportPgn()).toContain('[BeginnerRandomPercent "20"]');
+  expect(GameController.restore(game.save()).exportPgn()).toContain('[BeginnerMaxDepth "4"]');
+  expect(GameController.restore(game.save()).exportPgn()).toContain('[BeginnerMovetimeMs "220"]');
   for(const difficulty of [0,1,2] as const) expect(GameController.restore(new GameController(undefined,{mode:'ai',playerColor:'w',difficulty}).save()).getSnapshot().settings.difficulty).toBe(difficulty);
 });
-test('custom probability survives saves, records, PGN export and subsequent new games',()=>{
-  const game=new GameController(undefined,{mode:'ai',playerColor:'w',difficulty:3,beginnerRandomPercent:40});
+test('custom entry settings survive saves, records, PGN export and subsequent new games',()=>{
+  const custom={beginnerRandomPercent:40,beginnerMaxDepth:6,beginnerMovetimeMs:800};
+  const game=new GameController(undefined,{mode:'ai',playerColor:'w',difficulty:3,...custom});
   const restored=GameController.restore(game.save());
-  expect(restored.getSnapshot().settings.beginnerRandomPercent).toBe(40);
+  expect(restored.getSnapshot().settings).toMatchObject(custom);
   expect(restored.exportPgn()).toContain('[BeginnerRandomPercent "40"]');
+  expect(restored.exportPgn()).toContain('[BeginnerMaxDepth "6"]');
+  expect(restored.exportPgn()).toContain('[BeginnerMovetimeMs "800"]');
   restored.resign();
   const records=validateGameRecords(restored.getSnapshot().records);
-  expect(records[0].settings.beginnerRandomPercent).toBe(40);
+  expect(records[0].settings).toMatchObject(custom);
   restored.newGame();
-  expect(restored.getSnapshot().settings.beginnerRandomPercent).toBe(40);
+  expect(restored.getSnapshot().settings).toMatchObject(custom);
+});
+test('invalid search settings are rejected without changing the active game',()=>{
+  const game=new GameController(); game.move('e2','e4');
+  const saved=game.save(),before=game.getSnapshot();
+  const finished=new GameController(); finished.resign(); const [record]=finished.getSnapshot().records;
+  for(const patch of [
+    ...[0,11,1.5,'4',null,NaN,Infinity].map(beginnerMaxDepth=>({beginnerMaxDepth})),
+    ...[-1,0,221,2001,'220',null,NaN,Infinity].map(beginnerMovetimeMs=>({beginnerMovetimeMs})),
+  ]) {
+    const settings={...saved.settings,...patch};
+    expect(()=>GameController.restore({...saved,settings})).toThrow('入门');
+    expect(()=>validateGameRecords([{...record,settings}])).toThrow('入门');
+    expect(()=>game.newGame(settings as typeof saved.settings)).toThrow('入门');
+    expect(game.getSnapshot()).toBe(before);
+  }
 });
 test('invalid probabilities are rejected before changing the game or accepting saved data',()=>{
   const game=new GameController(); game.move('e2','e4');

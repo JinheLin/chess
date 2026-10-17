@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { GameSettings } from '../game/GameState';
 import { DIFFICULTIES } from '../engine/ChessEngine';
-import { BEGINNER_RANDOM_PERCENT_OPTIONS, DEFAULT_BEGINNER_RANDOM_PERCENT } from '../engine/BeginnerPolicy';
+import { BEGINNER_RANDOM_PERCENT_OPTIONS, DEFAULT_BEGINNER_RANDOM_PERCENT, BEGINNER_MAX_DEPTH_OPTIONS, DEFAULT_BEGINNER_MAX_DEPTH, BEGINNER_MOVETIME_OPTIONS, DEFAULT_BEGINNER_MOVETIME_MS } from '../engine/BeginnerPolicy';
 import { Modal } from './Modal';
 export function GameSettingsDialog({ settings, onClose, onStart }: {
   settings: GameSettings; onClose: () => void; onStart: (settings: GameSettings) => void;
@@ -23,6 +23,13 @@ export function GameSettingsDialog({ settings, onClose, onStart }: {
         </select></label>
         <small>入门会减少计算并偶尔漏看机会，适合熟悉规则；初级及以上使用 Stockfish 正常对弈。</small>
         {draft.difficulty === 3 && <>
+          <label>入门搜索深度<select value={draft.beginnerMaxDepth ?? DEFAULT_BEGINNER_MAX_DEPTH} aria-describedby="beginner-search-help" onChange={event => setDraft({ ...draft, beginnerMaxDepth: Number(event.target.value) })}>
+            {BEGINNER_MAX_DEPTH_OPTIONS.map(depth => <option key={depth} value={depth}>{depth} 层</option>)}
+          </select></label>
+          <label>入门思考时间<select value={draft.beginnerMovetimeMs ?? DEFAULT_BEGINNER_MOVETIME_MS} aria-describedby="beginner-search-help" onChange={event => setDraft({ ...draft, beginnerMovetimeMs: Number(event.target.value) })}>
+            {BEGINNER_MOVETIME_OPTIONS.map(time => <option key={time} value={time}>{time} 毫秒</option>)}
+          </select></label>
+          <small id="beginner-search-help">搜索深度和思考时间都是上限，通常越高越难；达到任一限制时即可落子。</small>
           <label>入门随机走法概率<select value={randomPercent} aria-describedby="beginner-random-help" onChange={event => setDraft({ ...draft, beginnerRandomPercent: Number(event.target.value) })}>
             {BEGINNER_RANDOM_PERCENT_OPTIONS.map(percent => <option key={percent} value={percent}>{percent}%</option>)}
           </select></label>

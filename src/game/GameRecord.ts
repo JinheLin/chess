@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 import type { GameSettings } from './GameState';
-import { validateBeginnerRandomPercent } from '../engine/BeginnerPolicy';
+import { validateBeginnerSettings } from '../engine/BeginnerPolicy';
 
 export const MAX_GAME_RECORDS = 100;
 export interface GameRecord {
@@ -29,7 +29,7 @@ export function validateGameRecords(value: unknown): GameRecord[] {
         !Number.isInteger(record.plyCount) || record.plyCount < 0 || record.plyCount > 10000 ||
         typeof record.pgn !== 'string' || record.pgn.length > 200000 ||
         (record.timingEstimated !== undefined && typeof record.timingEstimated !== 'boolean')) throw new Error('无效对弈记录');
-    validateBeginnerRandomPercent(record.settings.beginnerRandomPercent);
+    validateBeginnerSettings(record.settings);
     const chess = new Chess();
     chess.loadPgn(record.pgn);
     if (chess.history().length !== record.plyCount) throw new Error('无效记录棋谱');

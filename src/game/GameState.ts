@@ -6,6 +6,9 @@ export interface GameSettings {
   mode: 'local' | 'ai'; playerColor: Color; difficulty: 0 | 1 | 2 | 3;
   /** Omitted by older saves; defaults to 20%. Only applies to entry difficulty. */
   beginnerRandomPercent?: number;
+  /** Older saves use depth 4 and 220 ms. Only apply to entry difficulty. */
+  beginnerMaxDepth?: number;
+  beginnerMovetimeMs?: number;
 }
 export interface GameState {
   fen: string;

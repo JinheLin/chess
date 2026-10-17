@@ -1,3 +1,5 @@
+import { DEFAULT_BEGINNER_MOVETIME_MS } from './BeginnerPolicy';
+
 export interface SearchOptions {
   movetimeMs: number;
   maxDepth?: number;
@@ -17,5 +19,5 @@ export const DIFFICULTIES = [
   { label: '中级', skill: 8, movetimeMs: 650 },
   { label: '高级', skill: 16, movetimeMs: 1200 },
   // Stable ID 3 preserves existing saved difficulty indices.
-  { label: '入门', skill: 0, movetimeMs: 220 },
+  { label: '入门', skill: 0, movetimeMs: DEFAULT_BEGINNER_MOVETIME_MS },
 ] as const;

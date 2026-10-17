@@ -72,6 +72,11 @@ test('entry difficulty plays either side and survives reload',async({page})=>{
     await openTools(page); await page.getByRole('button',{name:'对局设置',exact:true}).click();
     await page.getByLabel('AI 难度').selectOption({label:'入门'});await page.getByLabel('我的执棋').selectOption(color);
     const probability=color==='w'?'10':'100';
+    const depth=color==='w'?'1':'10',time=color==='w'?'50':'2000';
+    await expect(page.getByLabel('入门搜索深度').locator('option')).toHaveCount(10);
+    await expect(page.getByLabel('入门思考时间').locator('option')).toHaveCount(10);
+    await page.getByLabel('入门搜索深度').selectOption(depth);
+    await page.getByLabel('入门思考时间').selectOption(time);
     await expect(page.getByLabel('入门随机走法概率').locator('option')).toHaveText(['10%','20%','30%','40%','50%','60%','70%','80%','90%','100%']);
     await page.getByLabel('入门随机走法概率').selectOption(probability);
     await page.getByRole('button',{name:'应用并开始新局'}).click(); await closeTools(page);
@@ -83,25 +88,41 @@ test('entry difficulty plays either side and survives reload',async({page})=>{
     await page.reload(); await openTools(page); await page.getByRole('button',{name:'对局设置',exact:true}).click();
     await expect(page.getByLabel('AI 难度')).toHaveValue('3');
     await expect(page.getByLabel('入门随机走法概率')).toHaveValue(probability);
+    await expect(page.getByLabel('入门搜索深度')).toHaveValue(depth);
+    await expect(page.getByLabel('入门思考时间')).toHaveValue(time);
     await page.getByRole('button',{name:'取消',exact:true}).click();
   }
 });
-test('entry probability defaults to 20%, only appears for entry AI and cancellation keeps settings',async({page})=>{
+test('entry parameters use legacy defaults, only appear for entry AI and cancel safely',async({page})=>{
   await page.goto('./'); await openTools(page);
   await page.getByRole('button',{name:'对局设置',exact:true}).click();
   await expect(page.getByLabel('入门随机走法概率')).toHaveCount(0);
+  await expect(page.getByLabel('入门搜索深度')).toHaveCount(0);
+  await expect(page.getByLabel('入门思考时间')).toHaveCount(0);
   await page.getByLabel('AI 难度').selectOption('3');
   await expect(page.getByLabel('入门随机走法概率')).toHaveValue('20');
+  await expect(page.getByLabel('入门搜索深度')).toHaveValue('4');
+  await expect(page.getByLabel('入门思考时间')).toHaveValue('220');
   await page.getByLabel('入门随机走法概率').selectOption('70');
+  await page.getByLabel('入门搜索深度').selectOption('6');
+  await page.getByLabel('入门思考时间').selectOption('800');
   await page.getByLabel('AI 难度').selectOption('0');
   await expect(page.getByLabel('入门随机走法概率')).toHaveCount(0);
+  await expect(page.getByLabel('入门搜索深度')).toHaveCount(0);
+  await expect(page.getByLabel('入门思考时间')).toHaveCount(0);
   await page.getByLabel('AI 难度').selectOption('3');
   await expect(page.getByLabel('入门随机走法概率')).toHaveValue('70');
+  await expect(page.getByLabel('入门搜索深度')).toHaveValue('6');
+  await expect(page.getByLabel('入门思考时间')).toHaveValue('800');
   await page.getByRole('combobox',{name:'对弈模式',exact:true}).selectOption('local');
   await expect(page.getByLabel('入门随机走法概率')).toHaveCount(0);
+  await expect(page.getByLabel('入门搜索深度')).toHaveCount(0);
+  await expect(page.getByLabel('入门思考时间')).toHaveCount(0);
   await page.getByRole('button',{name:'取消',exact:true}).click();
   await page.getByRole('button',{name:'对局设置',exact:true}).click();
   await expect(page.getByLabel('AI 难度')).toHaveValue('0');
   await page.getByLabel('AI 难度').selectOption('3');
   await expect(page.getByLabel('入门随机走法概率')).toHaveValue('20');
+  await expect(page.getByLabel('入门搜索深度')).toHaveValue('4');
+  await expect(page.getByLabel('入门思考时间')).toHaveValue('220');
 });
