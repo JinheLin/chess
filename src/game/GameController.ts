@@ -1,4 +1,4 @@
-import { beginnerMove } from '../engine/BeginnerPolicy';
+import { beginnerMove, DEFAULT_BEGINNER_RANDOM_PERCENT, validateBeginnerRandomPercent } from '../engine/BeginnerPolicy';
 import { Chess } from 'chess.js';
 import type { Color, Square } from 'chess.js';
 import { colorName, resultOf } from './ChessRules';
@@ -31,6 +31,7 @@ export class GameController {
   private engineFactory: (() => ChessEngine) | null = null;
 
   constructor(fen?: string, settings: GameSettings = { mode: 'local', playerColor: 'w', difficulty: 0 }) {
+    validateBeginnerRandomPercent(settings.beginnerRandomPercent);
     this.chess = new Chess(fen);
     this.initialFen = this.chess.fen();
     this.settings = { ...settings };
@@ -80,6 +81,7 @@ export class GameController {
     const player = (color: Color) => this.settings.mode === 'local' ? `Local ${color === 'w' ? 'White' : 'Black'}` : color === this.settings.playerColor ? 'Human' : `Stockfish 19 (Skill ${DIFFICULTIES[this.settings.difficulty].skill}${this.settings.difficulty === 3 ? ', Beginner policy' : ''})`;
     const start = new Date(this.startedAt).toISOString();
     const headers: Record<string, string> = { Event: 'Chess Lab', Site: 'Local', Date: start.slice(0, 10).replaceAll('-', '.'), Round: '-', White: player('w'), Black: player('b'), Result: result, UTCDate: start.slice(0, 10).replaceAll('-', '.'), UTCTime: start.slice(11, 19), StartTime: start };
+    if (this.settings.mode === 'ai' && this.settings.difficulty === 3) headers.BeginnerRandomPercent = String(this.settings.beginnerRandomPercent ?? DEFAULT_BEGINNER_RANDOM_PERCENT);
     if (this.endedAt) { headers.EndTime = this.endedAt; headers.Duration = `${Math.floor((Date.parse(this.endedAt) - Date.parse(this.startedAt)) / 1000)}s`; }
     if (this.timingEstimated) headers.TimeComment = 'End time estimated at first restore';
     for (const [key, value] of Object.entries(headers)) copy.setHeader(key, value);
@@ -178,7 +180,7 @@ export class GameController {
         });
         if (revision !== this.revision || abort.signal.aborted) return;
         if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)) throw new Error('AI 返回无效走法，请重试');
-        if (this.settings.difficulty === 3) uci = beginnerMove(uci,this.chess.moves({verbose:true}).map(move=>`${move.from}${move.to}${move.promotion ?? ''}`));
+        if (this.settings.difficulty === 3) uci = beginnerMove(uci,this.chess.moves({verbose:true}).map(move=>`${move.from}${move.to}${move.promotion ?? ''}`),this.settings.beginnerRandomPercent);
         try { this.chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }); }
         catch { throw new Error('AI 返回非法走法，棋局已保留，请重试'); }
         this.publish();
@@ -231,6 +233,7 @@ export class GameController {
     this.resume();
   }
   newGame(settings: GameSettings = this.settings) {
+    validateBeginnerRandomPercent(settings.beginnerRandomPercent);
     if (!this.gameResult() && this.chess.history().length) this.archive('未完成 · 开始新局');
     this.disconnectEngine();
     this.settings = { ...settings };
