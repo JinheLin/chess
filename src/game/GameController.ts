@@ -3,6 +3,7 @@ import { Chess } from 'chess.js';
 import type { Color, Square } from 'chess.js';
 import { colorName, resultOf } from './ChessRules';
 import type { GameSettings, GameState, Promotion } from './GameState';
+import { isCoaching, validateCoaching } from './GameState';
 import { DIFFICULTIES } from '../engine/ChessEngine';
 import type { ChessEngine } from '../engine/ChessEngine';
 import { validateSavedGame } from './SavedGame';
@@ -32,6 +33,7 @@ export class GameController {
 
   constructor(fen?: string, settings: GameSettings = { mode: 'local', playerColor: 'w', difficulty: 0 }) {
     validateBeginnerSettings(settings);
+    validateCoaching(settings);
     this.chess = new Chess(fen);
     this.initialFen = this.chess.fen();
     this.settings = { ...settings };
@@ -81,6 +83,7 @@ export class GameController {
     const player = (color: Color) => this.settings.mode === 'local' ? `Local ${color === 'w' ? 'White' : 'Black'}` : color === this.settings.playerColor ? 'Human' : `Stockfish 19 (Skill ${DIFFICULTIES[this.settings.difficulty].skill}${this.settings.difficulty === 3 ? ', Beginner policy' : ''})`;
     const start = new Date(this.startedAt).toISOString();
     const headers: Record<string, string> = { Event: 'Chess Lab', Site: 'Local', Date: start.slice(0, 10).replaceAll('-', '.'), Round: '-', White: player('w'), Black: player('b'), Result: result, UTCDate: start.slice(0, 10).replaceAll('-', '.'), UTCTime: start.slice(11, 19), StartTime: start };
+    if (isCoaching(this.settings)) headers.Mode = 'Coaching';
     if (this.settings.mode === 'ai' && this.settings.difficulty === 3) {
       headers.BeginnerRandomPercent = String(this.settings.beginnerRandomPercent ?? DEFAULT_BEGINNER_RANDOM_PERCENT);
       headers.BeginnerMaxDepth = String(this.settings.beginnerMaxDepth ?? DEFAULT_BEGINNER_MAX_DEPTH);
@@ -240,6 +243,7 @@ export class GameController {
   }
   newGame(settings: GameSettings = this.settings) {
     validateBeginnerSettings(settings);
+    validateCoaching(settings);
     if (!this.gameResult() && this.chess.history().length) this.archive('未完成 · 开始新局');
     this.disconnectEngine();
     this.settings = { ...settings };

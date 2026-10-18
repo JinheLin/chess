@@ -158,3 +158,20 @@
 @keyframes mate-flash{0%{background:#e0554800}25%{background:#e055484d}100%{background:#e0554800}}
 @keyframes mate-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
 @keyframes mate-banner{0%{opacity:0;transform:scale(.86)}18%{opacity:1;transform:scale(1)}70%{opacity:1}100%{opacity:0}}
+.coach-panel{flex-shrink:0;background:#f0f6f8;border:1px solid #cadde5;border-radius:12px;padding:12px 16px;margin-top:10px;color:#2d5263;min-width:0}
+.coach-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.coach-heading h2{font-size:15px}
+.coach-heading button{font-size:12px;min-height:44px;padding:8px 12px;white-space:nowrap;color:#2d607a;border-color:#b9d1df;background:#fff}
+.coach-content{font-size:13px;line-height:1.7;max-height:180px;overflow:auto;overscroll-behavior:contain;overflow-wrap:anywhere}
+.coach-content p{margin:6px 0}
+.coach-content small{font-size:11px;color:#607b87}
+.coach-feedback{border-top:1px solid #d2e1e7;padding-top:6px}
+.coach-error{color:#86563b}
+.coach-error button{margin-left:8px;font-size:12px;padding:6px 10px}
+@media(max-width:720px), (max-width:960px) and (orientation:portrait){
+  .board-column:has(.coach-panel) .board-slot{width:min(100%,calc(100cqh - 238px))}
+  .coach-panel{padding:6px 10px;margin:6px 2px 0}
+  .coach-heading h2{font-size:13px}
+  .coach-content{font-size:12px;max-height:90px}
+}
+@media (min-width:721px) and (max-width:1400px) and (max-height:1100px) and (orientation:landscape){.coach-content{max-height:100px}.coach-panel{padding:6px 12px}}

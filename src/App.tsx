@@ -13,6 +13,9 @@ import { PersonalityPanel } from './components/PersonalityPanel';
 import { downloadPgn } from './storage/downloadPgn';
 import { GameRecordsDialog } from './components/GameRecordsDialog';
 import { WebAppStatus } from './components/WebAppStatus';
+import { isCoaching } from './game/GameState';
+import { GameCoach } from './coaching/GameCoach';
+import { CoachPanel } from './components/CoachPanel';
 
 export default function App() {
   const { controller, preferences, setPreferences, notice, dismissNotice, saveFailed, unlockSound } = useGameSession();
@@ -20,6 +23,10 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [recordsOpen, setRecordsOpen] = useState(false);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
+  const [coach] = useState(() => new GameCoach(controller));
+  useEffect(() => { coach.connect(); return () => coach.dispose(); }, [coach]);
+  const coaching = useSyncExternalStore(coach.subscribe, coach.getSnapshot);
+  const guided = isCoaching(state.settings);
   const flipped = preferences.flipped;
   const setFlipped = (value: boolean) => setPreferences(previous => ({...previous, flipped:value}));
   const [exportError, setExportError] = useState(false);
@@ -34,7 +41,7 @@ export default function App() {
   }, [toolsOpen]);
   const clearBoard = () => setBoardKey(key => key + 1);
   const isAI = state.settings.mode === 'ai';
-  const modeName = isAI ? '人机对弈' : '本地双人';
+  const modeName = guided ? '下指导棋' : isAI ? '人机对弈' : '本地双人';
   const difficultyName = DIFFICULTIES[state.settings.difficulty].label;
   const resigningColor = isAI ? state.settings.playerColor : state.turn;
   const status = state.result ?? (state.phase === 'ENGINE_ERROR' ? '引擎暂不可用' : state.phase === 'ENGINE_LOADING' ? '正在准备 Stockfish…' : state.phase === 'AI_THINKING' ? 'AI 思考中…' : state.phase === 'PROMOTION_PENDING' ? '请选择升变棋子' : `${colorName(state.turn)}走棋${state.inCheck ? ' · 将军！' : ''}`);
@@ -53,16 +60,17 @@ export default function App() {
   return <div className={`app-shell${toolsOpen ? ' tools-open' : ''}`} onPointerDownCapture={unlockSound} onTouchStartCapture={unlockSound} onKeyDownCapture={unlockSound}>
     <header className="site-header"><a className="brand" href="./"><span className="brand-mark">♞</span><span>Chess<span className="brand-light"> Lab</span><small>专注棋盘，享受每一步</small></span></a><div className="header-tag"><i />{modeName} <span> / </span> 自由对弈</div></header>
     <main>
-      <div className="page-heading"><div><p className="eyebrow">A LITTLE FOCUS. A GREAT GAME.</p><h1>下一步，皆有可能<span>。</span></h1><p className="subtitle">{isAI ? '与 Stockfish 对弈，让每一步都有新的发现。' : '和身边的朋友，下一盘好棋。'}</p></div><span className="mode-badge">♟ 经典对弈</span></div>
+      <div className="page-heading"><div><p className="eyebrow">A LITTLE FOCUS. A GREAT GAME.</p><h1>下一步，皆有可能<span>。</span></h1><p className="subtitle">{guided ? '边下边学，走前有提示，走后有点评。' : isAI ? '与 Stockfish 对弈，让每一步都有新的发现。' : '和身边的朋友，下一盘好棋。'}</p></div><span className="mode-badge">♟ {guided ? '下指导棋' : '经典对弈'}</span></div>
       {notice && <div className="session-notice" role="status" aria-label="恢复提示"><span>{notice}</span><button aria-label="关闭恢复提示" onClick={dismissNotice}>×</button></div>}
       <div className={`mobile-status${state.inCheck ? ' check' : ''}`} role="status" aria-label="对局状态"><span className="turn-icon">{statusIcon}</span><strong>{status}</strong><button aria-label="落子音效" aria-pressed={preferences.sound} onClick={toggleSound}>{soundLabel}</button></div>
       <div className="game-layout">
         <section className="board-column">
           {player(flipped ? 'w' : 'b')}
-          <div className="board-slot"><GameBoard key={boardKey} controller={controller} state={state} flipped={flipped} /></div>
+          <div className="board-slot"><GameBoard key={boardKey} controller={controller} state={state} flipped={flipped} hint={guided ? coaching.hint : null} /></div>
           {player(flipped ? 'b' : 'w')}
           <div className="board-caption"><span>点击或拖动棋子开始走棋</span><button aria-label="落子音效" aria-pressed={preferences.sound} onClick={toggleSound}>{soundLabel}</button><button onClick={flipBoard} aria-label="翻转棋盘">⇅ <span>翻转棋盘</span></button></div>
           {state.engineError && <div className="engine-error" role="alert"><p>{state.engineError}</p><button onClick={() => controller.retryEngine()}>重试引擎</button></div>}
+          {guided && <CoachPanel coach={coach} coaching={coaching} game={state} />}
         </section>
         <aside className="side-column">
           <div className="sheet" id="more-tools" role="region" aria-label="更多功能">
@@ -72,7 +80,7 @@ export default function App() {
               <button className="sheet-flip" onClick={flipBoard} aria-label="翻转棋盘">⇅ 翻转棋盘</button>
             </section>
             <WebAppStatus controller={controller} />
-            {isAI && <PersonalityPanel controller={controller} />}
+            {isAI && !guided && <PersonalityPanel controller={controller} />}
             <MoveHistory history={state.history} />
             <div className="save-tools"><span role="status" aria-label="保存状态">{saveFailed ? '无法自动保存，请导出棋谱备份' : '已自动保存 · 仅此浏览器'}</span><button onClick={exportGame}>导出 PGN</button></div>
             <button className="records-button" onClick={() => setRecordsOpen(true)}>对弈记录 <span>{state.records.length} 局</span></button>

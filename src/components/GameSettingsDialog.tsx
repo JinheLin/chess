@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { GameSettings } from '../game/GameState';
+import { isCoaching } from '../game/GameState';
 import { DIFFICULTIES } from '../engine/ChessEngine';
 import { BEGINNER_RANDOM_PERCENT_OPTIONS, DEFAULT_BEGINNER_RANDOM_PERCENT, BEGINNER_MAX_DEPTH_OPTIONS, DEFAULT_BEGINNER_MAX_DEPTH, BEGINNER_MOVETIME_OPTIONS, DEFAULT_BEGINNER_MOVETIME_MS } from '../engine/BeginnerPolicy';
 import { Modal } from './Modal';
@@ -11,9 +12,10 @@ export function GameSettingsDialog({ settings, onClose, onStart }: {
   return <Modal title="对局设置" onClose={onClose}>
     <p>应用设置将保存当前对局并开始新局；未结束的对局记为未完成。</p>
     <div className="settings-fields">
-      <label>对弈模式<select value={draft.mode} onChange={event => setDraft({ ...draft, mode: event.target.value as GameSettings['mode'] })}>
-        <option value="ai">人机对弈</option><option value="local">本地双人</option>
+      <label>对弈模式<select value={isCoaching(draft) ? 'coach' : draft.mode} onChange={event => setDraft({ ...draft, mode: event.target.value === 'local' ? 'local' : 'ai', coaching: event.target.value === 'coach' })}>
+        <option value="ai">人机对弈</option><option value="coach">下指导棋</option><option value="local">本地双人</option>
       </select></label>
+      {isCoaching(draft) && <small>与电脑边下边学：走前可查看推荐着法，走后自动点评。提示不会替你落子，随时可以悔棋重试。</small>}
       {draft.mode === 'ai' && <>
         <label>我的执棋<select value={draft.playerColor} onChange={event => setDraft({ ...draft, playerColor: event.target.value as GameSettings['playerColor'] })}>
           <option value="w">白方 · 我先走</option><option value="b">黑方 · AI 先走</option>

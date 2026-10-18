@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import type { GameSettings } from './GameState';
+import { validateCoaching } from './GameState';
 import { validateBeginnerSettings } from '../engine/BeginnerPolicy';
 
 export const MAX_GAME_RECORDS = 100;
@@ -30,6 +31,7 @@ export function validateGameRecords(value: unknown): GameRecord[] {
         typeof record.pgn !== 'string' || record.pgn.length > 200000 ||
         (record.timingEstimated !== undefined && typeof record.timingEstimated !== 'boolean')) throw new Error('无效对弈记录');
     validateBeginnerSettings(record.settings);
+    validateCoaching(record.settings);
     const chess = new Chess();
     chess.loadPgn(record.pgn);
     if (chess.history().length !== record.plyCount) throw new Error('无效记录棋谱');

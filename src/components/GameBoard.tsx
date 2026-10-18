@@ -6,8 +6,9 @@ import { boardEffect } from '../audio/MoveSound';
 import type { BoardEffect } from '../audio/MoveSound';
 import type { GameController } from '../game/GameController';
 import type { GameState } from '../game/GameState';
+import type { CoachHint } from '../coaching/GameCoach';
 
-export function GameBoard({ controller, state, flipped }: { controller: GameController; state: GameState; flipped: boolean }) {
+export function GameBoard({ controller, state, flipped, hint }: { controller: GameController; state: GameState; flipped: boolean; hint?: CoachHint | null }) {
   const [selected, select] = useState<Square | null>(null);
   const [fx, setFx] = useState<{ ply: number; kind: BoardEffect; square: Square } | null>(null);
   const previousPly = useRef(state.history.length);
@@ -28,9 +29,10 @@ export function GameBoard({ controller, state, flipped }: { controller: GameCont
   const last = state.history.at(-1);
   if (last) for (const square of [last.from, last.to]) styles[square] = { backgroundColor: '#cfcb78' };
   if (state.checkedKing) styles[state.checkedKing] = { background: 'radial-gradient(ellipse, #e55d52 10%, #cc726a 85%)' };
+  if (hint && state.phase === 'PLAYER_TURN') for (const square of [hint.from, hint.to]) styles[square] = { ...styles[square], boxShadow: 'inset 0 0 0 4px #367fa6' };
   if (selected) {
-    styles[selected] = { backgroundColor: '#e0c478' };
-    for (const move of controller.legalMoves(selected)) styles[move.to] = { backgroundImage: move.captured ? 'radial-gradient(transparent 57%, #203f3b66 60%, #203f3b66 70%, transparent 73%)' : 'radial-gradient(#213e3b55 22%, transparent 24%)' };
+    styles[selected] = { ...styles[selected], backgroundColor: '#e0c478' };
+    for (const move of controller.legalMoves(selected)) styles[move.to] = { ...styles[move.to], backgroundImage: move.captured ? 'radial-gradient(transparent 57%, #203f3b66 60%, #203f3b66 70%, transparent 73%)' : 'radial-gradient(#213e3b55 22%, transparent 24%)' };
   }
   const click = (square: Square) => {
     if (selected && selected !== square) {
@@ -51,7 +53,7 @@ export function GameBoard({ controller, state, flipped }: { controller: GameCont
       onPieceDragCancel: () => select(null),
       onSquareClick: ({ square }) => click(square as Square),
       onPieceDrop: ({ sourceSquare, targetSquare }) => { select(null); return !!targetSquare && controller.move(sourceSquare as Square, targetSquare as Square); },
-      squareRenderer: ({ square, children }) => <div data-testid={`square-${square}`} className="square-cell" style={{width:'100%',height:'100%',...styles[square]}}>{children}{fx?.square === square && <span className={`square-fx ${fx.kind}`} />}</div>,
+      squareRenderer: ({ square, children }) => <div data-testid={`square-${square}`} data-coach-hint={hint && state.phase === 'PLAYER_TURN' ? square === hint.from ? 'from' : square === hint.to ? 'to' : undefined : undefined} className="square-cell" style={{width:'100%',height:'100%',...styles[square]}}>{children}{fx?.square === square && <span className={`square-fx ${fx.kind}`} />}</div>,
     }} />
     {fx?.kind === 'check' && <span className="board-fx check" />}
     {fx?.kind === 'mate' && <span className="board-fx mate" />}

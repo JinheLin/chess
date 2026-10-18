@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { GameRecord } from '../game/GameRecord';
 import { MAX_GAME_RECORDS } from '../game/GameRecord';
 import { DIFFICULTIES } from '../engine/ChessEngine';
+import { isCoaching } from '../game/GameState';
 import { downloadPgn } from '../storage/downloadPgn';
 import { Modal } from './Modal';
 
@@ -29,7 +30,7 @@ export function GameRecordsDialog({ records, onClose }: { records: readonly Game
           <div><dt>耗时{record.timingEstimated ? '（估算）' : ''}</dt><dd>{record.timingEstimated ? '约 ' : ''}{duration(record.durationMs)}</dd></div>
         </dl>
         {record.timingEstimated && <p className="record-time-note">旧存档缺少结束时间，按首次恢复时刻估算。</p>}
-        <div className="record-footer"><span>{record.settings.mode === 'ai' ? `人机对弈 · ${DIFFICULTIES[record.settings.difficulty].label} · 执${record.settings.playerColor === 'w' ? '白' : '黑'}` : '本地双人'} · {record.plyCount} 步</span><button onClick={() => exportRecord(record)}>导出记录 PGN</button></div>
+        <div className="record-footer"><span>{record.settings.mode === 'ai' ? `${isCoaching(record.settings) ? '下指导棋' : '人机对弈'} · ${DIFFICULTIES[record.settings.difficulty].label} · 执${record.settings.playerColor === 'w' ? '白' : '黑'}` : '本地双人'} · {record.plyCount} 步</span><button onClick={() => exportRecord(record)}>导出记录 PGN</button></div>
       </li>)}
     </ol> : <div className="records-empty"><strong>还没有对弈记录</strong><p>结束一局后自动保存；中途重开会保留为未完成。</p></div>}
     {exportError && <p role="alert" className="engine-error">下载未成功，请检查浏览器下载设置后重试。</p>}
