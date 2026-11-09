@@ -35,7 +35,7 @@ export function GameSettingsDialog({ settings, onClose, onStart }: {
           <label>入门随机走法概率<select value={randomPercent} aria-describedby="beginner-random-help" onChange={event => setDraft({ ...draft, beginnerRandomPercent: Number(event.target.value) })}>
             {BEGINNER_RANDOM_PERCENT_OPTIONS.map(percent => <option key={percent} value={percent}>{percent}%</option>)}
           </select></label>
-          <small id="beginner-random-help">越低越少偏离推荐走法，通常更难。100% 有其他合法走法时总是随机选择。</small>
+          <small id="beginner-random-help">越低越少偏离推荐走法，通常更难。0% 始终采用引擎推荐走法；100% 有其他合法走法时总是随机选择。</small>
         </>}
       </>}
     </div>

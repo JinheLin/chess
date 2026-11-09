@@ -4,24 +4,19 @@ import {GameController} from '../../src/game/GameController';
 import {validateGameRecords} from '../../src/game/GameRecord';
 import type {SearchOptions} from '../../src/engine/ChessEngine';
 afterEach(()=>vi.restoreAllMocks());
-test('beginner policy sometimes misses the recommendation but can only select a legal move',()=>{
-  expect(beginnerMove('e2e4',['e2e4','a2a3'],undefined,()=>0)).toBe('a2a3');
-  expect(beginnerMove('e2e4',['e2e4','a2a3'],undefined,()=>.199)).toBe('a2a3');
-  expect(beginnerMove('e2e4',['e2e4','a2a3'],undefined,()=>.2)).toBe('e2e4');
-  expect(beginnerMove('e2e4',['e2e4','a2a3'],undefined,()=>.299)).toBe('e2e4');
-  expect(beginnerMove('e2e4',['e2e4','a2a3'],undefined,()=>.3)).toBe('e2e4');
-  expect(beginnerMove('e2e4',['e2e4','a2a3'],undefined,()=>.39)).toBe('e2e4');
-  expect(beginnerMove('e2e4',['e2e4','a2a3'],undefined,()=>.8)).toBe('e2e4');
+test('beginner policy follows the recommendation by default and randomizes only among legal moves',()=>{
+  expect(beginnerMove('e2e4',['e2e4','a2a3'],undefined,()=>0)).toBe('e2e4');
+  expect(beginnerMove('e2e4',['e2e4','a2a3'],undefined,()=>.999)).toBe('e2e4');
   expect(beginnerMove('a7a8q',['a7a8q'],100,()=>0)).toBe('a7a8q');
   expect(beginnerMove('a7a8q',['a7a8q','a7a8n'],100,()=>0)).toBe('a7a8n');
   expect(()=>beginnerMove('e2e5',['e2e4'],undefined,()=>0)).toThrow('非法');
 });
 test.each([
-  [10,.099,'a2a3'],[10,.1,'e2e4'],[30,.299,'a2a3'],[30,.3,'e2e4'],[100,.999,'a2a3'],
+  [0,0,'e2e4'],[0,.999,'e2e4'],[10,.099,'a2a3'],[10,.1,'e2e4'],[30,.299,'a2a3'],[30,.3,'e2e4'],[100,.999,'a2a3'],
 ])('random probability %i%% uses its configured boundary at %f',(percent,roll,expected)=>{
   expect(beginnerMove('e2e4',['e2e4','a2a3'],percent,()=>roll)).toBe(expected);
 });
-test.each([[3,10,true],[3,30,false],[3,100,false],[0,100,true]] as const)('controller applies probability %i/%i only to entry games',async(difficulty,beginnerRandomPercent,recommended)=>{
+test.each([[3,0,true],[3,10,true],[3,30,false],[3,100,false],[0,100,true]] as const)('controller applies probability %i/%i only to entry games',async(difficulty,beginnerRandomPercent,recommended)=>{
   vi.spyOn(Math,'random').mockReturnValue(.25);
   const game=new GameController(undefined,{mode:'ai',playerColor:'b',difficulty,beginnerRandomPercent,beginnerMaxDepth:10,beginnerMovetimeMs:2000});
   let options:SearchOptions|undefined;
@@ -33,6 +28,7 @@ test.each([[3,10,true],[3,30,false],[3,100,false],[0,100,true]] as const)('contr
   game.disconnectEngine();
 });
 test.each([[1,50],[6,800],[10,2000]])('restored entry search uses depth %i and time %i',async(beginnerMaxDepth,beginnerMovetimeMs)=>{
+  vi.spyOn(Math,'random').mockReturnValue(0);
   const original=new GameController(undefined,{mode:'ai',playerColor:'b',difficulty:3,beginnerMaxDepth,beginnerMovetimeMs});
   const game=GameController.restore(original.save());
   let options:SearchOptions|undefined;
@@ -40,6 +36,7 @@ test.each([[1,50],[6,800],[10,2000]])('restored entry search uses depth %i and t
   for(let i=0;i<20;i++) await Promise.resolve();
   expect(options).toMatchObject({movetimeMs:beginnerMovetimeMs,maxDepth:beginnerMaxDepth});
   expect(game.getSnapshot().history).toHaveLength(1);
+  expect(game.getSnapshot().history[0].lan).toBe('e2e4');
   game.disconnectEngine();
 });
 test('new difficulty survives saves, limits playing search, and exports its distinct identity',async()=>{
@@ -51,17 +48,17 @@ test('new difficulty survives saves, limits playing search, and exports its dist
   expect(game.getSnapshot().history).toHaveLength(1);
   expect(GameController.restore(game.save()).getSnapshot().settings.difficulty).toBe(3);
   expect(game.exportPgn()).toContain('Beginner policy');game.disconnectEngine();
-  expect(GameController.restore(game.save()).exportPgn()).toContain('[BeginnerRandomPercent "20"]');
+  expect(GameController.restore(game.save()).exportPgn()).toContain('[BeginnerRandomPercent "0"]');
   expect(GameController.restore(game.save()).exportPgn()).toContain('[BeginnerMaxDepth "4"]');
   expect(GameController.restore(game.save()).exportPgn()).toContain('[BeginnerMovetimeMs "220"]');
   for(const difficulty of [0,1,2] as const) expect(GameController.restore(new GameController(undefined,{mode:'ai',playerColor:'w',difficulty}).save()).getSnapshot().settings.difficulty).toBe(difficulty);
 });
-test('custom entry settings survive saves, records, PGN export and subsequent new games',()=>{
-  const custom={beginnerRandomPercent:40,beginnerMaxDepth:6,beginnerMovetimeMs:800};
+test.each([0,20,40])('entry probability %i%% survives saves, records, PGN export and subsequent new games',beginnerRandomPercent=>{
+  const custom={beginnerRandomPercent,beginnerMaxDepth:6,beginnerMovetimeMs:800};
   const game=new GameController(undefined,{mode:'ai',playerColor:'w',difficulty:3,...custom});
   const restored=GameController.restore(game.save());
   expect(restored.getSnapshot().settings).toMatchObject(custom);
-  expect(restored.exportPgn()).toContain('[BeginnerRandomPercent "40"]');
+  expect(restored.exportPgn()).toContain(`[BeginnerRandomPercent "${beginnerRandomPercent}"]`);
   expect(restored.exportPgn()).toContain('[BeginnerMaxDepth "6"]');
   expect(restored.exportPgn()).toContain('[BeginnerMovetimeMs "800"]');
   restored.resign();
@@ -90,7 +87,7 @@ test('invalid probabilities are rejected before changing the game or accepting s
   const saved=game.save(),snapshot=game.getSnapshot();
   game.resign(); const [record]=game.getSnapshot().records;
   const ongoing=GameController.restore(saved),before=ongoing.getSnapshot();
-  for(const beginnerRandomPercent of [-10,0,15,101,20.5,'20',null,NaN,Infinity]) {
+  for(const beginnerRandomPercent of [-10,15,101,20.5,'0','20',null,NaN,Infinity]) {
     const settings={...saved.settings,beginnerRandomPercent};
     expect(()=>GameController.restore({...saved,settings})).toThrow('概率');
     expect(()=>validateGameRecords([{...record,settings}])).toThrow('概率');

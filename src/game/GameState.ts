@@ -6,7 +6,7 @@ export interface GameSettings {
   mode: 'local' | 'ai'; playerColor: Color; difficulty: 0 | 1 | 2 | 3;
   /** Older saves keep ordinary play. Coaching uses the same AI game rules. */
   coaching?: boolean;
-  /** Omitted by older saves; defaults to 20%. Only applies to entry difficulty. */
+  /** Omitted by older saves; defaults to 0%. Only applies to entry difficulty. */
   beginnerRandomPercent?: number;
   /** Older saves use depth 4 and 220 ms. Only apply to entry difficulty. */
   beginnerMaxDepth?: number;
